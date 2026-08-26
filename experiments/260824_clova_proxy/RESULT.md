@@ -113,3 +113,21 @@ Clova timing은 turn 끝을 다음 turn 시작으로 두어 침묵까지 화자 
 현재 library wheel이 WAV input, 시간축, VAD, Kaldi-compatible FBank, pretrained embedding, H1/H2, UNKNOWN 정책을 CPU에서 끝까지 실행하고 redacted span을 만드는 것은 확인했다. 단순 handcrafted feature는 실패했지만 실제 speaker embedding을 연결하자 두 화자 합침을 피하면서 high-precision selective attribution이 가능했다. 다만 전체 reference 시간의 약 40%만 speaker로 확정하므로 현재 장점은 높은 선택적 정확도이고, coverage는 계속 개선해야 한다.
 
 다음 유효한 gate는 여러 실제 녹음으로 calibration/holdout을 분리하고, WeSpeaker feature parity와 OSD를 검증한 뒤 diarization-only와 word-speaker mapping을 각각 측정하는 것이다.
+
+## 0.4.0 robustness·runtime 후속
+
+동일 source에서 label-independent 8k, -12dB, noise 20dB challenge를 만들었다.
+global gain v2는 1.25배 deadband로 정상/canonical을 exact no-op 처리하면서
+-12dB와 8k+-12dB의 H1 merge를 H2로 복원했다. noise 20dB는 gain/CAM++로
+복원되지 않았고, RNNoise+ResNet experimental lane에서만 H2가 됐다. 이 결과는
+파생 단일 artifact이므로 모두 default off다.
+
+설치된 0.4.0 wheel을 1 CPU/256MiB/network-none/read-only container에서 한
+persistent session으로 두 번 실행했다. cold/warm RTF는 `0.02667/0.02728`,
+timeline digest는 두 pass 및 0.3 canonical과 동일했다. warm resident 증가는
+`2.874%`, cgroup peak는 `249.1MiB`였다. 실제 Xeon/cgroup-v1 증거는 아니다.
+
+Clova transcript를 enterprise proxy로 둔 STT 5분 비교에서는 Whisper turbo Q5
+CER `15.90%`가 가장 낮았지만 wall `629.91초`였고, SenseVoice INT8은
+`8.13초`였지만 CER `24.35%`였다. CPU-only drop-in 대체는 거부하고 기존 STT에
+sddiar speaker attribution을 결합하는 경로를 우선한다.
