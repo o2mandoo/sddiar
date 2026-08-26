@@ -1,0 +1,48 @@
+# Local Python/build state
+.DS_Store
+.venv*/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+release/
+*.log
+
+# Secrets and machine-local configuration
+.env
+.env.*
+!.env.example
+
+# Imported runtime binaries and media are distributed outside Git by hash.
+*.onnx
+*.whl
+*.wav
+*.m4a
+*.mp3
+*.flac
+*.aac
+*.pcm
+*.raw
+*.tar
+*.tar.gz
+artifacts/**/wheels/
+artifacts/**/tooling/wheels/
+
+# User-provided source transcript at the repository root.
+/*.txt
+
+# Per-span/private-timing experiment outputs. Curated aggregate evidence,
+# manifests, hashes, and reports remain trackable.
+experiments/**/result-*.json
+experiments/**/proxy-*.json
+experiments/**/clova_timing.json
+experiments/**/oracle_boundaries.json
+experiments/**/held_out_labels.json
+experiments/**/non_oracle_energy_raw.json
+experiments/**/*diarization_output*.json
+experiments/**/baseline_cli.json
+experiments/**/*canonical*.json
+
+# Local benchmark receipts may contain host/container identifiers.
+experiments/**/repeated_worker*.json
