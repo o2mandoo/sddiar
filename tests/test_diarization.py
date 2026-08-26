@@ -1,7 +1,10 @@
+import base64
+import hashlib
 import unittest
 from dataclasses import replace
 from math import sqrt
 
+from sddiar.calibration import CalibrationProfileVerifier, DigestCalibrationSignatureVerifier, canonical_calibration_bytes
 from sddiar.contracts import AnchorEvidence, EmbeddingResult, HypothesisDecision, ProtectedOverlapSpan, SpeakerAssignment, SpeakerState, Tracklet
 from sddiar.diarization import (
     DiarizationConfig,
@@ -15,6 +18,23 @@ from sddiar.diarization import (
     re_evaluate_micro,
     speaker_states_from_decision,
 )
+from boundary_test_helpers import sealed_osd, sealed_scd
+
+
+class _ReleaseVerifier(DigestCalibrationSignatureVerifier):
+    trust_level = "RELEASE"
+
+
+def _release_binding():
+    key = b"diarization-test-key"
+    profile = {
+        "schema_version": "1", "profile_id": "p", "calibration_version": "v1",
+        "model_hashes": {"m": "a" * 64}, "source_sample_rates": [8000], "thresholds": {"scd_evidence_min": 0.5, "osd_evidence_min": 0.5},
+        "dataset_manifest_hash": "b" * 64, "scorer_hash": "c" * 64, "config_hash": "d" * 64,
+        "approver": "a", "provenance": {"annotation_schema_version": "1", "created_at": "now", "model_pack_id": "m", "pipeline_version": "p", "safety_constraints": ["safe"], "selection_objective": "safe"}, "signer_key_id": "k",
+    }
+    profile["signature"] = base64.b64encode(hashlib.sha256(key + canonical_calibration_bytes(profile)).digest()).decode()
+    return CalibrationProfileVerifier(_ReleaseVerifier(key)).verify(profile, model_hashes={"m": "a" * 64}, source_sample_rate=8000, config_hash="d" * 64, profile_id="p")
 
 
 def anchor(tracklet_id: str, vector: tuple[float, ...], start_us: int, group: str, scd: float | None = 1.0) -> AnchorEvidence:
@@ -203,12 +223,25 @@ class DiarizationTests(unittest.TestCase):
     def test_tracklet_builder_keeps_overlap_separate_from_clean_tracklets(self) -> None:
         built = build_tracklets(
             ({"region_id": "r", "start_us": 0, "end_us": 2_000_000},),
-            overlap_regions=({"start_us": 500_000, "end_us": 1_500_000, "overlap_evidence": 1.0},),
+            overlap_regions=(sealed_osd(500_000, 1_500_000, 1.0, ("osd",), source_id="test"),),
             cfg=DiarizationConfig(anchor_min_clean_us=500_000, support_min_clean_us=200_000),
             audio_id="test",
         )
         self.assertEqual([(span.start_us, span.end_us) for span in built.protected_overlap_spans], [(500_000, 1_500_000)])
         self.assertTrue(all(not tracklet.protected_overlap for tracklet in built.tracklets))
+
+    def test_boundary_evidence_ids_are_local_to_the_cut_region_and_tracklet(self) -> None:
+        first = sealed_scd(1_000_000, 0.9, "first")
+        second = sealed_scd(4_000_000, 0.9, "second")
+        built = build_tracklets(
+            (
+                {"region_id": "r1", "start_us": 0, "end_us": 2_000_000},
+                {"region_id": "r2", "start_us": 3_000_000, "end_us": 5_000_000},
+            ),
+            scd_events=(first, second),
+            cfg=DiarizationConfig(min_split_side_us=100_000),
+        )
+        self.assertEqual([tracklet.boundary_evidence_ids for tracklet in built.tracklets], [("first",), ("first",), ("second",), ("second",)])
 
     def test_recent_centroid_never_updates_micro_but_updates_trusted_support(self) -> None:
         state = SpeakerState("SPEAKER_00", (1.0, 0.0), ("a",), 0.0)

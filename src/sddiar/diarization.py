@@ -261,6 +261,26 @@ def build_tracklets(
     """Create non-overlap tracklets and preserve high-overlap spans separately."""
 
     cfg = cfg or DiarizationConfig()
+    # Capability boundary: only the concrete event values emitted by an
+    # approved segmentation gate may alter tracklets.  In particular, do not
+    # accept mappings, duck-typed objects, or diagnostic evidence with an
+    # ``approved``/``is_high`` flag: those are observational by contract.
+    from .segmentation import _EnforceableOverlapEvent, _EnforceableSpeakerChangeEvent
+
+    for event in scd_events:
+        if type(event) is not _EnforceableSpeakerChangeEvent:
+            raise ContractValidationError(
+                "scd_events must contain exact sealed enforceable SCD values"
+            )
+        if event.source_id != audio_id:
+            raise ContractValidationError("SCD event source does not match audio_id")
+    for region in overlap_regions:
+        if type(region) is not _EnforceableOverlapEvent:
+            raise ContractValidationError(
+                "overlap_regions must contain exact sealed enforceable OSD values"
+            )
+        if region.source_id != audio_id:
+            raise ContractValidationError("OSD event source does not match audio_id")
     protected = _merge_protected_overlap(overlap_regions, cfg, audio_id)
     tracklets: list[Tracklet] = []
     boundary_ids: list[str] = []
@@ -269,6 +289,10 @@ def build_tracklets(
         if region_end <= region_start:
             continue
         cuts = {region_start, region_end}
+        # Keep boundary evidence scoped to this source speech region.  The
+        # previous accumulator leaked IDs from an earlier region into every
+        # later tracklet, which made receipts appear to support unrelated cuts.
+        evidence_ids_at_cut: dict[int, list[str]] = {}
         for overlap in protected:
             if region_start < overlap.start_us < region_end:
                 cuts.add(overlap.start_us)
@@ -282,7 +306,9 @@ def build_tracklets(
             if event_time - region_start < cfg.min_split_side_us or region_end - event_time < cfg.min_split_side_us:
                 continue
             cuts.add(event_time)
-            boundary_ids.append(str(_get(event, "evidence_id", _stable_id("scd", audio_id, event_time, event_index))))
+            evidence_id = str(_get(event, "evidence_id", _stable_id("scd", audio_id, event_time, event_index)))
+            boundary_ids.append(evidence_id)
+            evidence_ids_at_cut.setdefault(event_time, []).append(evidence_id)
         if cfg.max_tracklet_us > 0:
             artificial = region_start + cfg.max_tracklet_us
             while artificial < region_end:
@@ -297,6 +323,9 @@ def build_tracklets(
             if clean_speech_us == 0:
                 # The protected span is returned independently and later materialized as OVERLAP.
                 continue
+            local_boundary_ids = tuple(dict.fromkeys(
+                tuple(evidence_ids_at_cut.get(start, ())) + tuple(evidence_ids_at_cut.get(end, ()))
+            ))
             tracklets.append(
                 Tracklet(
                     tracklet_id=_stable_id("tracklet", audio_id, start, end, ordinal),
@@ -306,7 +335,7 @@ def build_tracklets(
                     end_us=end,
                     clean_speech_us=clean_speech_us,
                     kind=_duration_class(clean_speech_us, cfg),
-                    boundary_evidence_ids=tuple(boundary_ids),
+                    boundary_evidence_ids=local_boundary_ids,
                     scd_evidence_before=_scd_evidence_at(start, scd_events),
                     scd_evidence_after=_scd_evidence_at(end, scd_events),
                     protected_overlap=protected_us > 0,

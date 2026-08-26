@@ -4,7 +4,21 @@ from .timebase import TimeWarp
 from .errors import *
 from .pipeline import EvidencePipeline, DiarizationRun
 from .serialization import ResultSerializer
-from .segmentation import RuleEvidenceSegmentation, SegmentationEvidence
+from .segmentation import (
+    RuleEvidenceSegmentation, SegmentationEvidence,
+    DiagnosticSpeakerChangeEvent, DiagnosticOverlapEvent,
+    SpeakerChangeEvent, OverlapEvent,
+    authorize_scd_event, authorize_speaker_change_event,
+    authorize_speaker_change, authorize_overlap_event, authorize_osd_event,
+    authorize_overlap,
+    clip_and_coalesce_speech_mask, clip_and_coalesce_speech_regions,
+    clip_speech_mask, clip_speech_regions,
+)
+from .boundary_evidence import (
+    BoundaryGateConfig, BoundaryModelCandidate, BoundaryProbe, BoundaryOverlapVeto,
+    BoundaryReceipt, BoundaryGateResult, DualEvidenceBoundaryGate,
+    DualEvidenceBoundaryGateConfig, ModelSCDCandidate, OverlapVetoInterval,
+)
 from .correction import HumanSpeakerCorrection, apply_session_corrections
 from .audio_gain import (
     DEFAULT_GLOBAL_GAIN_POLICY,
@@ -72,6 +86,16 @@ __all__ = [
     "EvidencePipeline", "DiarizationRun",
     "ResultSerializer",
     "RuleEvidenceSegmentation", "SegmentationEvidence",
+    "DiagnosticSpeakerChangeEvent", "DiagnosticOverlapEvent",
+    "SpeakerChangeEvent", "OverlapEvent",
+    "authorize_scd_event", "authorize_speaker_change_event",
+    "authorize_speaker_change", "authorize_overlap_event", "authorize_osd_event",
+    "authorize_overlap",
+    "clip_and_coalesce_speech_mask", "clip_and_coalesce_speech_regions",
+    "clip_speech_mask", "clip_speech_regions",
+    "BoundaryGateConfig", "BoundaryModelCandidate", "BoundaryProbe", "BoundaryOverlapVeto",
+    "BoundaryReceipt", "BoundaryGateResult", "DualEvidenceBoundaryGate",
+    "DualEvidenceBoundaryGateConfig", "ModelSCDCandidate", "OverlapVetoInterval",
     "HumanSpeakerCorrection", "apply_session_corrections",
     "GlobalGainPolicy", "GlobalGainProfile", "DEFAULT_GLOBAL_GAIN_POLICY",
     "analyze_pcm16_global_gain",

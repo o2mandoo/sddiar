@@ -1,8 +1,28 @@
+import base64
+import hashlib
 import unittest
 
+from sddiar.calibration import CalibrationProfileVerifier, DigestCalibrationSignatureVerifier, canonical_calibration_bytes
 from sddiar.contracts import EmbeddingResult, Word, WordProvenance, WordTimeline
 from sddiar.diarization import DiarizationConfig
 from sddiar.pipeline import EvidencePipeline
+from boundary_test_helpers import sealed_osd
+
+
+class _ReleaseVerifier(DigestCalibrationSignatureVerifier):
+    trust_level = "RELEASE"
+
+
+def _release_binding():
+    key = b"pipeline-test-key"
+    profile = {
+        "schema_version": "1", "profile_id": "p", "calibration_version": "v1",
+        "model_hashes": {"m": "a" * 64}, "source_sample_rates": [8000], "thresholds": {"osd_evidence_min": 0.5},
+        "dataset_manifest_hash": "b" * 64, "scorer_hash": "c" * 64, "config_hash": "d" * 64,
+        "approver": "a", "provenance": {"annotation_schema_version": "1", "created_at": "now", "model_pack_id": "m", "pipeline_version": "p", "safety_constraints": ["safe"], "selection_objective": "safe"}, "signer_key_id": "k",
+    }
+    profile["signature"] = base64.b64encode(hashlib.sha256(key + canonical_calibration_bytes(profile)).digest()).decode()
+    return CalibrationProfileVerifier(_ReleaseVerifier(key)).verify(profile, model_hashes={"m": "a" * 64}, source_sample_rate=8000, config_hash="d" * 64, profile_id="p")
 
 
 class EvidencePipelineTests(unittest.TestCase):
@@ -63,7 +83,7 @@ class EvidencePipelineTests(unittest.TestCase):
             audio_id="overlap",
             source_duration_us=1_000,
             vad_regions=(),
-            overlap_regions=({"start_us": 100, "end_us": 900, "overlap_evidence": 1.0},),
+            overlap_regions=(sealed_osd(100, 900, 1.0, ("osd",), source_id="overlap"),),
         )
         self.assertEqual(run.decision.state, "UNCERTAIN_1_OR_2")
         self.assertEqual([(span.speaker_id, span.start_us, span.end_us) for span in run.spans], [("OVERLAP", 100, 900)])
