@@ -294,7 +294,8 @@ class RuleEvidenceSegmentation:
     ) -> SegmentationEvidence:
         speech_regions = self._speech_regions(view_id, vad_frames)
         discontinuities = self._probe_discontinuities(probes)
-        if approved_scd_events or approved_overlap_regions:
+        if (type(approved_scd_events) is not tuple or approved_scd_events != ()
+                or type(approved_overlap_regions) is not tuple or approved_overlap_regions != ()):
             raise ContractValidationError(
                 "SCD/OSD enforcement is unavailable; use shadow boundary evidence"
             )

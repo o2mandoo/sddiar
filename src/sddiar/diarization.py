@@ -265,7 +265,8 @@ def build_tracklets(
     # thresholds, not arbitrary per-job event bytes. Until a signed evidence
     # attestation is verified at this consumer boundary, every non-empty event
     # sequence is rejected regardless of Python type or private-token access.
-    if scd_events or overlap_regions:
+    if (type(scd_events) is not tuple or scd_events != ()
+            or type(overlap_regions) is not tuple or overlap_regions != ()):
         raise ContractValidationError(
             "SCD/OSD enforcement is unavailable; use shadow boundary evidence"
         )

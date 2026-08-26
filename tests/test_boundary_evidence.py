@@ -20,11 +20,27 @@ from sddiar.contracts import ContractValidationError
 from sddiar.diarization import DiarizationConfig, build_tracklets
 from sddiar.segmentation import (
     OverlapEvent,
+    RuleEvidenceSegmentation,
     SpeakerChangeEvent,
     authorize_overlap_event,
     authorize_scd_event,
     clip_and_coalesce_speech_mask,
 )
+
+
+class FalseyNonEmptyEvents:
+    """Adversarial iterable whose truth value hides its event."""
+
+    def __init__(self, event):
+        self._event = event
+
+    def __bool__(self):
+        return False
+
+    def __iter__(self):
+        yield self._event
+
+
 class ReleaseVerifier(DigestCalibrationSignatureVerifier):
     trust_level = "RELEASE"
 
@@ -178,6 +194,31 @@ class BoundaryEvidenceTests(unittest.TestCase):
                 scd_events=({"time_us": 1_000_000, "evidence": 1.0, "approved": True},),
                 overlap_regions=({"start_us": 500_000, "end_us": 700_000, "is_high": True},),
                 cfg=DiarizationConfig(min_split_side_us=100_000),
+            )
+
+    def test_falsey_nonempty_iterable_cannot_bypass_shadow_only_boundary(self):
+        vad = ({"start_us": 0, "end_us": 2_000_000},)
+        with self.assertRaises(ContractValidationError):
+            build_tracklets(
+                vad,
+                scd_events=FalseyNonEmptyEvents(
+                    SpeakerChangeEvent(1_000_000, 0.9, "forged")
+                ),
+            )
+        with self.assertRaises(ContractValidationError):
+            build_tracklets(
+                vad,
+                overlap_regions=FalseyNonEmptyEvents(
+                    OverlapEvent(500_000, 700_000, 0.9)
+                ),
+            )
+        with self.assertRaises(ContractValidationError):
+            RuleEvidenceSegmentation().build(
+                view_id="audio",
+                vad_frames=(),
+                approved_scd_events=FalseyNonEmptyEvents(
+                    SpeakerChangeEvent(1_000_000, 0.9, "forged")
+                ),
             )
 
 
