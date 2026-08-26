@@ -361,10 +361,11 @@ class PipelineRunMetadata:
     execution_provider: str
     hardware_fingerprint: Mapping[str, str]
     stage_rtf: Mapping[str, float]
-    peak_process_tree_rss_mb: float
+    peak_process_tree_rss_mb: Optional[float]
 
     def __post_init__(self):
-        _finite(self.peak_process_tree_rss_mb, "peak_process_tree_rss_mb")
+        if self.peak_process_tree_rss_mb is not None:
+            _finite(self.peak_process_tree_rss_mb, "peak_process_tree_rss_mb")
         for name, value in self.stage_rtf.items():
             _finite(value, f"stage rtf {name}")
 
