@@ -30,6 +30,11 @@ from sddiar.diarization import (  # noqa: E402
     DiarizationConfig, build_tracklets, decode_sequence, evaluate_hypotheses, finalize_sequence,
     refine_recent_states, select_anchor_evidence, speaker_states_from_decision,
 )
+from sddiar.graph_rescue_experimental import (  # noqa: E402
+    GraphRescueConfig,
+    build_redacted_receipt,
+    rescue_unknowns,
+)
 from sddiar.media import DecodedAudioChunk, WavPcmAccessor, WavPcmDecoder  # noqa: E402
 from sddiar.model_pack import VerifiedArtifact  # noqa: E402
 from sddiar.ort_cpu import create_ort_session  # noqa: E402
@@ -367,6 +372,173 @@ def _complete_merge(spans: Sequence[Any]) -> float:
     return float(len(assigned) < 2)
 
 
+def _graph_existing_label_parity(
+    tracklets: Sequence[Any], baseline_labels: Sequence[str], candidate_labels: Sequence[str],
+    protected_overlap_spans: Sequence[Any],
+) -> dict[str, Any]:
+    """Check exact source-time parity for baseline assigned/overlap material.
+
+    Graph rescue is allowed to materialize only a baseline UNKNOWN tracklet.
+    Comparing tracklet source intervals, rather than merged output spans,
+    avoids treating a newly rescued adjacent UNKNOWN as a change to an
+    already-assigned span while still catching any reassignment or overlap
+    drift.
+    """
+
+    if len(tracklets) != len(baseline_labels) or len(tracklets) != len(candidate_labels):
+        raise RuntimeError("graph rescue label/tracklet length mismatch")
+    protected = tuple(
+        sorted((int(span.start_us), int(span.end_us), "OVERLAP") for span in protected_overlap_spans)
+    )
+    baseline_existing = tuple(
+        (int(tracklet.start_us), int(tracklet.end_us), str(old), str(new))
+        for tracklet, old, new in zip(tracklets, baseline_labels, candidate_labels)
+        if old in {"SPEAKER_00", "SPEAKER_01", "OVERLAP"}
+    )
+    changed = tuple(row for row in baseline_existing if row[2] != row[3])
+    # The protected overlap spans are materialized outside graph labels and
+    # must remain byte-for-byte source-time identical as well.
+    parity = {
+        "passed": not changed,
+        "existing_assigned_or_overlap_count": len(baseline_existing),
+        "changed_existing_assigned_or_overlap_count": len(changed),
+        "protected_overlap_count": len(protected),
+    }
+    if changed:
+        raise RuntimeError("graph rescue violated existing assigned/OVERLAP source-time parity")
+    return parity
+
+
+def _graph_rescue_experimental_config() -> GraphRescueConfig:
+    """Return the fixed, label-independent policy for the opt-in arm."""
+
+    # Keep this policy in code so a run cannot tune graph topology against the
+    # reference labels.  ANCHOR_ONLY is the module default: SUPPORT examples
+    # are never silently promoted to graph seeds.
+    return GraphRescueConfig(
+        enabled=True,
+        adjacency_mode="bounded_knn",
+        k_neighbors=8,
+        propagation_steps=1,
+    )
+
+
+def _graph_rescue_report(
+    *,
+    tracklets: Sequence[Any],
+    baseline_trace: Any,
+    embeddings: Sequence[EmbeddingResult],
+    decision: Any,
+    protected_overlap_spans: Sequence[Any],
+    source_duration_us: int,
+    reference: Sequence[Mapping[str, Any]] | None,
+    score: Any,
+    materialize_config: DiarizationConfig,
+) -> tuple[dict[str, Any], Any, Any]:
+    """Run the graph arm and return redacted report, spans, and result."""
+
+    config = _graph_rescue_experimental_config()
+    embedding_by_tracklet = {item.tracklet_id: item for item in embeddings}
+    baseline_labels = tuple(baseline_trace.labels)
+    graph_result = rescue_unknowns(
+        tracklets,
+        baseline_labels,
+        embedding_by_tracklet,
+        decision=decision,
+        config=config,
+        # Intentionally omit seed_tracklet_ids: the fixed policy is
+        # ANCHOR_ONLY and must not be selected from labels or references.
+    )
+    parity = _graph_existing_label_parity(
+        tracklets, baseline_labels, graph_result.labels, protected_overlap_spans,
+    )
+    rescued_duration_us = sum(
+        int(tracklet.end_us - tracklet.start_us)
+        for tracklet, old, new in zip(tracklets, baseline_labels, graph_result.labels)
+        if old == "UNKNOWN" and new in {"SPEAKER_00", "SPEAKER_01"}
+    )
+    # Importing the library's materializer keeps span status/merge semantics
+    # identical to baseline while making no changes to production code.
+    from sddiar.diarization import _materialize  # noqa: PLC0415
+    candidate_spans = _materialize(
+        graph_result.labels, tracklets, protected_overlap_spans, source_duration_us,
+        materialize_config,
+    )
+    # Compare protected and pre-existing assigned time after materialization;
+    # this catches accidental changes in the materializer seam too.
+    if not all(
+        any(
+            span.speaker_id == old
+            and int(span.start_us) <= int(tracklet.start_us)
+            and int(span.end_us) >= int(tracklet.end_us)
+            for span in candidate_spans
+        )
+        for tracklet, old in zip(tracklets, baseline_labels)
+        if old in {"SPEAKER_00", "SPEAKER_01"}
+    ) or tuple(sorted(
+        (int(span.start_us), int(span.end_us))
+        for span in candidate_spans if span.speaker_id == "OVERLAP"
+    )) != tuple(sorted(
+        (int(span.start_us), int(span.end_us))
+        for span in baseline_trace.spans if span.speaker_id == "OVERLAP"
+    )):
+        raise RuntimeError("graph rescue violated materialized source-time parity")
+    changed_existing_assigned_us = sum(
+        int(tracklet.end_us - tracklet.start_us)
+        for tracklet, old, new in zip(tracklets, baseline_labels, graph_result.labels)
+        if old in {"SPEAKER_00", "SPEAKER_01"} and old != new
+    )
+    baseline_metrics = score(baseline_trace.spans, reference) if reference is not None else None
+    candidate_metrics = score(candidate_spans, reference) if reference is not None else None
+    def thaw(value: Any) -> Any:
+        if isinstance(value, Mapping):
+            return {str(key): thaw(item) for key, item in value.items()}
+        if isinstance(value, (tuple, list)):
+            return [thaw(item) for item in value]
+        return value
+
+    receipt = thaw(build_redacted_receipt(graph_result))
+    receipt["skip_reason"] = graph_result.diagnostics.get("skip_reason")
+    receipt["adjacency_mode"] = graph_result.diagnostics.get("adjacency_mode")
+    receipt["seed_mode"] = graph_result.diagnostics.get("seed_eligibility", {}).get("mode", "ANCHOR_ONLY")
+    receipt["parity_passed"] = parity["passed"]
+    policy = {
+        "adjacency_mode": config.adjacency_mode,
+        "k_neighbors": config.k_neighbors,
+        "propagation_steps": config.propagation_steps,
+        "seed_mode": "ANCHOR_ONLY",
+        "min_anchor_blocks": config.min_anchor_blocks,
+        "min_posterior": config.min_posterior,
+        "posterior_margin_min": config.posterior_margin_min,
+        "leave_block_margin_min": config.leave_block_margin_min,
+        "max_edge_distance": config.max_edge_distance,
+    }
+    policy_sha256 = hashlib.sha256(
+        json.dumps(policy, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("ascii")
+    ).hexdigest()
+    report = {
+        "kind": "GRAPH_RESCUE_EXPERIMENTAL_V1",
+        "experimental": True,
+        "default_enabled": False,
+        "production_approved": False,
+        "quality_status": "REVIEW_REQUIRED",
+        "release_authority": "none",
+        "policy": policy,
+        "policy_sha256": policy_sha256,
+        "candidate_count": len(graph_result.candidates),
+        "rescued_duration_us": rescued_duration_us,
+        "baseline_metrics": baseline_metrics,
+        "candidate_metrics": candidate_metrics,
+        "changed_existing_assigned_us": changed_existing_assigned_us,
+        "graph_diagnostics_redacted": receipt,
+        "limitations": (
+            "single_recording_clova_timing_proxy_is_not_release_ground_truth",
+            "unknown_only_rescue_requires_independent_rttm_uem_validation",
+        ),
+    }
+    return report, candidate_spans, graph_result
+
+
 def _run_decoder_calibration(
     *,
     tracklets: Sequence[Any],
@@ -536,6 +708,7 @@ def run_experiment(
     assignment_calibration_worst_speaker_accuracy_min: float | None = None,
     calibrate_decoder: bool = False,
     fast_fp32_baseline_rtf: float | None = None,
+    graph_rescue_experimental: bool = False,
     silero_runtime: Any | None = None,
     embedding_backend: Any | None = None,
 ) -> dict[str, Any]:
@@ -558,6 +731,8 @@ def run_experiment(
         raise ValueError("experiment requires PCM16 mono 16 kHz WAV")
     if type(auto_gain_normalization) is not bool:
         raise ValueError("auto_gain_normalization must be boolean")
+    if type(graph_rescue_experimental) is not bool:
+        raise ValueError("graph_rescue_experimental must be boolean")
     if max_duration_sec is not None and max_duration_sec <= 0:
         raise ValueError("max_duration_sec must be positive")
     if max_tracklet_sec <= 0:
@@ -739,6 +914,7 @@ def run_experiment(
     calibration_report = None
     decoder_report = None
     decoder_metrics = None
+    decoder_trace = None
     micro_subsegment_report = None
     strict_baseline_trace = None
     reference = _reference(Path(reference_path)) if reference_path else None
@@ -919,6 +1095,42 @@ def run_experiment(
             "emitted_span_timeline_sha256": _span_timeline_sha256(spans),
             "emitted_span_counts": _span_counts(spans),
         })
+    graph_report = None
+    if graph_rescue_experimental:
+        graph_started = time.perf_counter()
+        # Follow the exact trace that produced the currently emitted baseline.
+        # Selective MICRO can restore its strict baseline after the RTF gate.
+        current_timeline = _span_timeline_sha256(spans)
+        if decoder_trace is not None and current_timeline == _span_timeline_sha256(decoder_trace.spans):
+            graph_baseline_trace = decoder_trace
+            graph_embeddings = embeddings
+        elif strict_baseline_trace is not None and current_timeline == _span_timeline_sha256(strict_baseline_trace.spans):
+            graph_baseline_trace = strict_baseline_trace
+            graph_embeddings = baseline_embeddings
+        else:
+            graph_baseline_trace = decode_sequence(
+                built.tracklets, built.protected_overlap_spans, states, decision,
+                duration_us, selected_config, baseline_embeddings,
+            )
+            graph_embeddings = baseline_embeddings
+            if current_timeline != _span_timeline_sha256(graph_baseline_trace.spans):
+                raise RuntimeError("graph rescue baseline trace does not match emitted baseline")
+        graph_report, candidate_spans, _graph_result = _graph_rescue_report(
+            tracklets=built.tracklets,
+            baseline_trace=graph_baseline_trace,
+            embeddings=graph_embeddings,
+            decision=decision,
+            protected_overlap_spans=built.protected_overlap_spans,
+            source_duration_us=duration_us,
+            reference=reference,
+            score=score_timed,
+            materialize_config=selected_config,
+        )
+        spans = candidate_spans
+        metrics = graph_report["candidate_metrics"]
+        stage_timings["graph_rescue_wall_sec"] = _elapsed_wall_seconds(graph_started)
+        stage_timings["evaluation_scoring_wall_sec"] = evaluation_wall_sec
+        elapsed = _elapsed_wall_seconds(started)
     process_cpu_sec = max(0.0, _process_cpu_seconds() - cpu_started)
     peak_rss = peak_rss_bytes()
     feature_mode = getattr(embedding_backend, "feature_mode", "injected")
@@ -945,6 +1157,7 @@ def run_experiment(
             "subsegment_windows": subsegment_windows,
             "h2_complexity_penalty": h2_complexity_penalty,
             "h2_min_cost_gain": h2_min_cost_gain,
+            "graph_rescue_experimental": graph_rescue_experimental,
             "feature_mode": feature_mode,
             "feature_runtime_version": feature_runtime_version,
             "feature_frontend_tag": (
@@ -1015,6 +1228,8 @@ def run_experiment(
     if micro_subsegment_report:
         result["runtime_config"]["micro_subsegment_windows"] = True
         result["micro_subsegment_experiment"] = micro_subsegment_report
+    if graph_report is not None:
+        result["graph_rescue_experimental"] = graph_report
     return result
 
 
@@ -1041,6 +1256,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--assignment-calibration-worst-speaker-accuracy-min", type=float)
     parser.add_argument("--calibrate-decoder", action="store_true")
     parser.add_argument("--fast-fp32-baseline-rtf", type=float)
+    parser.add_argument(
+        "--graph-rescue-experimental",
+        action="store_true",
+        help="opt in to the fixed UNKNOWN-only graph rescue experiment",
+    )
     args = parser.parse_args(argv)
     print(json.dumps(run_experiment(
         args.audio, args.silero, args.wespeaker, args.reference,
@@ -1060,6 +1280,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         assignment_calibration_worst_speaker_accuracy_min=args.assignment_calibration_worst_speaker_accuracy_min,
         calibrate_decoder=args.calibrate_decoder,
         fast_fp32_baseline_rtf=args.fast_fp32_baseline_rtf,
+        graph_rescue_experimental=args.graph_rescue_experimental,
     ), ensure_ascii=False, sort_keys=True))
     return 0
 
