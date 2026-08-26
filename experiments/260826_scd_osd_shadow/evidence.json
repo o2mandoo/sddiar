@@ -1,0 +1,50 @@
+{
+  "schema": "sddiar.scd_osd_shadow_evidence_v1",
+  "recorded_date": "2026-08-26",
+  "boundary_source_commit": "cb6980d17a009a6e537ad46b69cbdcd6832ed0b8",
+  "model": {
+    "kind": "pyannote_segmentation_3_fp32_onnx",
+    "sha256": "220ad67ca923bef2fa91f2390c786097bf305bceb5e261d4af67b38e938e1079",
+    "variant": "fp32"
+  },
+  "input": {
+    "audio_sha256_prefix": "d78b53216085",
+    "duration_us": 3171732000,
+    "sample_rate_hz": 16000
+  },
+  "runtime": {
+    "host": "Apple M5 Max",
+    "inference_threads": 1,
+    "window_count": 3163,
+    "padded_window_count": 1,
+    "frame_count": 187955,
+    "elapsed_wall_seconds": 56.468294,
+    "model_inference_wall_seconds": 54.523208,
+    "peak_rss_mib": 200.59
+  },
+  "shadow": {
+    "diagnostic_change_event_count": 11,
+    "change_frames_ge_0_2": 66,
+    "overlap_frames_ge_0_5": 1263,
+    "overlap_frames_ge_0_75": 322,
+    "overlap_probability_p99": 0.40439885027321454,
+    "overlap_probability_p999": 0.8196395120842772,
+    "speaker_span_output_changed": false,
+    "dual_evidence_probe_gate_executed": false,
+    "release_authority": "none"
+  },
+  "decision": "MODEL_SHADOW_READY_DUAL_PROBE_AND_ANNOTATION_REQUIRED",
+  "limitations": [
+    "model_candidates_are_uncalibrated",
+    "no_boundary_probe_embeddings_were_applied",
+    "no_scd_or_osd_event_has_enforcement_authority",
+    "full_file_memory_is_not_a_256_mib_cgroup_proof",
+    "independent_scd_osd_annotations_are_required"
+  ],
+  "privacy": {
+    "audio": "omitted",
+    "source_path": "omitted",
+    "raw_logits": "omitted",
+    "local_speaker_axes": "omitted"
+  }
+}

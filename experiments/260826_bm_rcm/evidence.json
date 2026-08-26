@@ -1,0 +1,105 @@
+{
+  "schema": "sddiar.bm_rcm_experiment_evidence_v1",
+  "recorded_date": "2026-08-26",
+  "source_commit": "558cd1ac72b75503d43b743a7c60e5a1315fc828",
+  "algorithm": "bm-rcm-v2-fixedpoint-spherical-relative-cosine",
+  "integration": "bm-rcm-v2-baseline-h2-adapter-v1",
+  "experimental": true,
+  "default_enabled": false,
+  "production_approved": false,
+  "quality_status": "REVIEW_REQUIRED",
+  "release_authority": "none",
+  "input": {
+    "audio_sha256_prefix": "d78b53216085",
+    "duration_us": 3171732000,
+    "sample_rate_hz": 16000,
+    "reference_kind": "clova_note_single_recording_timing_proxy",
+    "reference_usage": "posthoc_scoring_only",
+    "upstream_assignment_calibration": false
+  },
+  "policy": {
+    "epsilon": "1/10",
+    "min_clean_duration_us": 1500000,
+    "duration_cap_us": 10000000,
+    "min_quality": "1/1000000",
+    "candidate_source": "contiguous_valid_baseline_unknown_run",
+    "application": "singleton_only_unknown",
+    "policy_sha256": "bce6aa08487f85829e8619aeaef19dfdba500116c0542f7beda8b7f2d1c6cb5a"
+  },
+  "runtime": {
+    "host": "Apple M5 Max",
+    "constraint": "one_inference_thread_not_cgroup_quota",
+    "total_wall_seconds": 37.1757,
+    "total_rtf": 0.011721,
+    "bm_rcm_wall_seconds": 6.843,
+    "bm_rcm_overhead_ratio_vs_non_bm_wall": 0.2255981168837591,
+    "peak_rss_mib": 209.12
+  },
+  "selection": {
+    "candidate_run_count": 44,
+    "candidate_count": 44,
+    "singleton_count": 17,
+    "ood_count": 27,
+    "ambiguous_count": 0,
+    "fail_closed_count": 0,
+    "rescued_duration_us": 36512000,
+    "newly_rescued_proxy_precision": 0.997589833479404,
+    "changed_existing_assigned_us": 0
+  },
+  "baseline": {
+    "complete_merge": 0.0,
+    "reference_timeline_coverage": 0.3378215074109114,
+    "speaker_accuracy_given_assigned": 0.9905305293344485,
+    "worst_speaker_accuracy_given_assigned": 0.945436049200037,
+    "worst_speaker_reference_timeline_coverage": 0.1375262321144674,
+    "unknown_rate_on_output_speech": 0.2796212610286206,
+    "turn_coverage": 0.6923076923076923,
+    "turn_accuracy_given_covered": 0.9236111111111112
+  },
+  "candidate": {
+    "complete_merge": 0.0,
+    "reference_timeline_coverage": 0.34933585619678337,
+    "speaker_accuracy_given_assigned": 0.9907632088280325,
+    "worst_speaker_accuracy_given_assigned": 0.9529843675982946,
+    "worst_speaker_reference_timeline_coverage": 0.16109379968203497,
+    "unknown_rate_on_output_speech": 0.255067785668173,
+    "turn_coverage": 0.6971153846153846,
+    "turn_accuracy_given_covered": 0.9448275862068966
+  },
+  "deltas": {
+    "reference_timeline_coverage": 0.011514348785871986,
+    "speaker_accuracy_given_assigned": 0.0002326794935839649,
+    "worst_speaker_accuracy_given_assigned": 0.007548318398257647,
+    "worst_speaker_reference_timeline_coverage": 0.02356756756756756,
+    "unknown_rate_on_output_speech": -0.024553475360447607,
+    "unknown_relative_reduction": 0.08780975835000772,
+    "turn_coverage": 0.004807692307692291,
+    "turn_accuracy_given_covered": 0.021216475095785392
+  },
+  "gates": {
+    "new_rescue_precision_gte_0_95": true,
+    "overall_assigned_accuracy_gte_0_985": true,
+    "worst_speaker_accuracy_gte_0_95": true,
+    "complete_merge_zero": true,
+    "existing_assigned_exact_parity": true,
+    "unknown_relative_reduction_gte_0_10": false,
+    "worst_speaker_coverage_gain_gte_0_05": false,
+    "relative_wall_overhead_lte_0_05": false,
+    "total_rtf_lte_0_05": true
+  },
+  "decision": "ACCEPT_HIGH_PRECISION_CHALLENGER_KEEP_DEFAULT_OFF",
+  "limitations": [
+    "single_recording_clova_timing_proxy_is_not_release_ground_truth",
+    "pseudo_label_anchor_blocks_do_not_guarantee_conformal_exchangeability",
+    "host_run_is_not_xeon_cgroup_v1_evidence",
+    "cpu_overhead_and_coverage_gain_require_further_optimization",
+    "independent_rttm_uem_validation_is_required"
+  ],
+  "privacy": {
+    "audio": "omitted",
+    "transcript_text": "omitted",
+    "local_paths": "omitted",
+    "embedding_vectors": "omitted",
+    "block_ids": "digest_only"
+  }
+}
