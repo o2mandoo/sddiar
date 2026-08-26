@@ -218,6 +218,13 @@ class AudioGainTests(unittest.TestCase):
             profile = analyze_pcm16_global_gain(audio, prefer_numpy=True)
         self.assertEqual(profile.sum_squares_pcm16, 20_000)
 
+    def test_gain_policy_is_part_of_the_public_library_api(self) -> None:
+        import sddiar
+
+        self.assertIs(sddiar.GlobalGainPolicy, GlobalGainPolicy)
+        self.assertIs(sddiar.DEFAULT_GLOBAL_GAIN_POLICY, DEFAULT_GLOBAL_GAIN_POLICY)
+        self.assertIs(sddiar.analyze_pcm16_global_gain, analyze_pcm16_global_gain)
+
 
 if __name__ == "__main__":
     unittest.main()

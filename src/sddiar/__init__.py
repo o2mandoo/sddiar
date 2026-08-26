@@ -6,6 +6,12 @@ from .pipeline import EvidencePipeline, DiarizationRun
 from .serialization import ResultSerializer
 from .segmentation import RuleEvidenceSegmentation, SegmentationEvidence
 from .correction import HumanSpeakerCorrection, apply_session_corrections
+from .audio_gain import (
+    DEFAULT_GLOBAL_GAIN_POLICY,
+    GlobalGainPolicy,
+    GlobalGainProfile,
+    analyze_pcm16_global_gain,
+)
 from .onnx_diarization import LocalOnnxDiarizationConfig, LocalOnnxDiarizationResult, LocalOnnxDiarizer
 from .ort_cpu import OrtCpuBudget, OrtCpuBudgetExceededError, OrtCpuConfig, create_ort_session
 from .runtime_env import RuntimeCpuDelta, RuntimeCpuSnapshot, delta_cpu_snapshots, read_cpu_snapshot
@@ -67,6 +73,8 @@ __all__ = [
     "ResultSerializer",
     "RuleEvidenceSegmentation", "SegmentationEvidence",
     "HumanSpeakerCorrection", "apply_session_corrections",
+    "GlobalGainPolicy", "GlobalGainProfile", "DEFAULT_GLOBAL_GAIN_POLICY",
+    "analyze_pcm16_global_gain",
     "LocalOnnxDiarizationConfig", "LocalOnnxDiarizationResult", "LocalOnnxDiarizer",
     "PyannoteSegmentationConfig", "PyannoteFrameEvidence", "PyannoteChangeEvent",
     "PyannoteSegmentationResult", "PyannoteSegmentationOnnxRuntime",

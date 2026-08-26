@@ -109,6 +109,18 @@ sddiar diarize INPUT_16K_MONO_PCM.wav \
 승인 전에는 default off다. 단일 파일에서 선택한 assignment threshold를 다른
 파일의 release 기본값으로 사용하면 안 된다.
 
+`--auto-gain-normalization`은 파일명이나 화자 label을 보지 않는 bounded global
+gain v2다. 정상 원음과 8 kHz 입력에서는 timeline/result가 exact no-op이었고,
+-12 dB 및 8 kHz+-12 dB 변형에서는 H1을 H2로 복구했다. 네 perturbation의
+평균 원본 할당 유지율은 `77.26% → 90.25%`, speaker flip은
+`22.74% → 9.75%`로 개선됐다. SNR 20 dB 잡음은 해결하지 못하므로 자동
+denoise router나 production 기본값으로 해석하면 안 된다.
+
+라이브러리 사용자는 `GlobalGainPolicy`, `GlobalGainProfile`,
+`analyze_pcm16_global_gain`을 public API로 가져올 수 있다. 정책은 sample 순서와
+시간축을 바꾸지 않고, peak 0.99와 최대 4배를 넘지 않으며 1.25배 미만 후보는
+구조적으로 no-op 처리한다.
+
 ## 검증
 
 ```sh
@@ -118,7 +130,7 @@ PYTHONPATH=src python3.11 scripts/verify_offline_release.py release \
   --production --scan-source src/sddiar
 ```
 
-2026-08-26 기준 CPython 3.11 개발 runtime에서 285개 test가 통과했다.
+2026-08-26 기준 CPython 3.11 개발 runtime에서 325개 unittest가 통과했다.
 `src/sddiar`, `scripts`, `bench/one_cpu` static zero-network scan은 issue 0건이다.
 production release root가 아직 없으므로 production 검증은
 `RELEASE_ROOT_MISSING`으로 fail-closed되는 것이 정상이다.
