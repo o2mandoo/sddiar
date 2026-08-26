@@ -1,0 +1,107 @@
+{
+  "schema_version": "1.0",
+  "kind": "rnnoise-enhancement-experiment-evidence",
+  "recorded_date": "2026-08-26",
+  "experimental": true,
+  "default_enabled": false,
+  "production_approved": false,
+  "source_provenance": {
+    "upstream": "xiph/rnnoise",
+    "source_commit": "70f1d256acd4b34a572f999a05c87bf00b67730d",
+    "model_tar_sha256": "0a8755f8e2d834eff6a54714ecc7d75f9932e845df35f8b59bc52a7cfe6e8b37",
+    "model_version": "0a8755f8e2d834eff6a54714ecc7d75f9932e845df35f8b59bc52a7cfe6e8b37",
+    "source_license_spdx": "BSD-3-Clause",
+    "model_redistribution_scope": "not_inferred_from_source_code_license"
+  },
+  "challenge": {
+    "artifact_id_redacted_prefix": "a7d4",
+    "full_artifact_digest_retained_here": false,
+    "raw_path_retained_here": false,
+    "raw_spans_retained_here": false,
+    "transcript_retained_here": false,
+    "noise_snr_db": 20,
+    "audio_duration_seconds": 3171.732,
+    "evaluation_scope": "single_redacted_challenge_artifact_proxy"
+  },
+  "pipeline": {
+    "rnnoise_mode": "native_scalar",
+    "rnnoise_sample_rate_hz": 48000,
+    "downstream_sample_rate_hz": 16000,
+    "resample_back_to_downstream_rate": true,
+    "resnet_fixed_threshold": 0.5,
+    "release_default_changed": false
+  },
+  "quality_observation": {
+    "baseline_hypothesis": "H1",
+    "enhanced_hypothesis": "H2",
+    "proxy_assigned_rate": 0.423697,
+    "proxy_assigned_accuracy": 0.982339,
+    "proxy_worst_speaker_assigned_accuracy": 0.950971,
+    "proxy_turn_coverage": 0.841346,
+    "covered_turn_accuracy": {
+      "correct": 166,
+      "total": 175,
+      "rate": 0.9485714285714286
+    }
+  },
+  "performance_observation": {
+    "component_measurements": [
+      {
+        "stage": "rnnoise",
+        "seconds": 139.79,
+        "clock_basis": "process_cpu"
+      },
+      {
+        "stage": "diarization",
+        "seconds": 31.61,
+        "clock_basis": "reported_component_time"
+      }
+    ],
+    "component_time_sum_seconds": 171.4,
+    "component_only_derived_rtf": 0.05403987474351552,
+    "reported_estimated_combined_local_rtf": 0.0545,
+    "rtf_note": "The reported combined estimate is retained separately and is not reconstructed from rounded component values.",
+    "peak_rss_mb": {
+      "rnnoise_stage": 13.0,
+      "diarization_stage": 201.73,
+      "scope": "separate_stage_measurements_not_summed"
+    }
+  },
+  "decision": {
+    "status": "EXPERIMENTAL_CHALLENGER_ONLY",
+    "adopt_as_default": false,
+    "quality_gate_authority": "none",
+    "reasons": [
+      "single_artifact_proxy_not_independent_release_evidence",
+      "h1_to_h2_change_is_not_ground_truth_quality_proof",
+      "enhancement_specific_signed_calibration_missing",
+      "real_binary_impulse_time_alignment_validation_not_run",
+      "hash_verified_resampler_build_attestation_missing",
+      "five_target_native_validation_not_run",
+      "xeon_cgroup_validation_not_run"
+    ]
+  },
+  "implementation_verification_scope": {
+    "runtime_unit_tests": "fake_executables_and_injected_runner",
+    "real_rnnoise_binary_executed_by_committed_tests": false,
+    "source_or_model_vendored": false,
+    "four_platform_claim": false,
+    "xeon_claim": false
+  },
+  "committed_runtime_authority_boundary": {
+    "build_attestation": "caller_hash_bound_structure_only",
+    "timebase_record": "caller_hash_bound_structure_only",
+    "sample_count_and_duration": "exactly_enforced",
+    "resampler_latency": "not_independently_verified",
+    "source_time_authorized": false,
+    "native_child_egress": "not_verified_requires_external_sandbox",
+    "build_mode_generalization": "x86_rtcd_disabled_target_compiler_default_not_scalar_claim"
+  },
+  "privacy": {
+    "private_paths": "omitted",
+    "raw_audio": "omitted",
+    "raw_spans": "omitted",
+    "speaker_names": "omitted",
+    "transcript": "omitted"
+  }
+}
