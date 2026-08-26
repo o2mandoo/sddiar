@@ -1,0 +1,90 @@
+{
+  "schema_version": "1.0",
+  "kind": "sddiar-native-platform-ci-evidence",
+  "recorded_date": "2026-08-26",
+  "production_approved": false,
+  "source_commit": "dcae3ea01f89a5fbde372eaa1b95d3925503e7a8",
+  "workflow": {
+    "name": "platform-ci",
+    "run_id": 32949975904,
+    "url": "https://github.com/o2mandoo/sddiar/actions/runs/32949975904",
+    "conclusion": "success",
+    "created_at": "2026-08-26T08:52:07Z",
+    "completed_at": "2026-08-26T08:53:40Z",
+    "checkout_action_commit": "3d3c42e5aac5ba805825da76410c181273ba90b1",
+    "setup_python_action_commit": "5fda3b95a4ea91299a34e894583c3862153e4b97"
+  },
+  "lanes": [
+    {
+      "name": "linux-x86_64",
+      "runner": "ubuntu-24.04",
+      "architecture": "x86_64",
+      "job_id": 98118975081,
+      "result": "success",
+      "duration_seconds": 26,
+      "optional_cpu_runtime_installed": true
+    },
+    {
+      "name": "windows-x86_64",
+      "runner": "windows-2025",
+      "architecture": "x86_64",
+      "job_id": 98118974888,
+      "result": "success",
+      "duration_seconds": 89,
+      "optional_cpu_runtime_installed": true
+    },
+    {
+      "name": "macos-arm64",
+      "runner": "macos-15",
+      "architecture": "arm64",
+      "job_id": 98118975155,
+      "result": "success",
+      "duration_seconds": 30,
+      "optional_cpu_runtime_installed": true
+    },
+    {
+      "name": "macos-x86_64",
+      "runner": "macos-15-intel",
+      "architecture": "x86_64",
+      "job_id": 98118975194,
+      "result": "success",
+      "duration_seconds": 56,
+      "optional_cpu_runtime_installed": false,
+      "reason": "onnxruntime-1.29.0-and-kaldi-native-fbank-1.22.3-official-wheels-unavailable"
+    }
+  ],
+  "checks_per_lane": [
+    "CPython-3.11",
+    "wheel-build-from-clean-public-checkout",
+    "fresh-built-wheel-install",
+    "installed-wheel-test-suite",
+    "isolated-no-index-no-deps-wheel-install",
+    "declared-runner-architecture",
+    "zero-network-source-scan",
+    "complete-Git-history-media-extension-and-magic-scan"
+  ],
+  "runtime_lanes_additionally_checked": [
+    "onnxruntime-1.29.0-import",
+    "CPUExecutionProvider-present",
+    "kaldi-native-fbank-1.22.3-import",
+    "exact-optional-dependency-versions"
+  ],
+  "defects_found_and_fixed_by_native_ci": [
+    "Windows-CRLF-changed-hash-bound-lock-bytes",
+    "POSIX-resource-import-in-package-and-experiment-scripts",
+    "Windows-backslash-rejected-by-direct-words-artifact-loader"
+  ],
+  "limitations": [
+    "no-real-model-inference-on-GitHub-runners",
+    "macOS-Intel-optional-runtime-remains-source-build-only",
+    "official-onnxruntime-wheels-are-not-no-telemetry-production-evidence",
+    "not-the-Xeon-6230R-cgroup-v1-target",
+    "no-independent-annotated-Korean-quality-dataset"
+  ],
+  "privacy": {
+    "audio": "absent-from-current-and-complete-Git-history",
+    "transcript": "absent-from-current-and-complete-Git-history",
+    "model-binaries": "absent-from-current-and-complete-Git-history",
+    "wheel-binaries": "absent-from-current-and-complete-Git-history"
+  }
+}

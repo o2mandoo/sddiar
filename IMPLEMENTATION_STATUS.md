@@ -47,6 +47,7 @@
 - `ProductionOrchestrator`: 8/16k canonical input, supplied/local STT, word mapping, neutral fallback
 - hash-bound whisper.cpp local backend와 privacy-safe Korean CER/WER/SA-WER evaluation
 - 0.4.0 persistent 1-CPU worker: 105.7분 처리, deterministic digest, warm memory gate
+- GitHub native CI: Linux x64, Windows x64, macOS Arm/Intel wheel build·fresh install·test green
 
 ## production 전 아직 필요한 항목
 
@@ -55,7 +56,7 @@
 - 현재 GPU large-v3 실제 출력과 동일 입력의 STT non-inferiority 비교
 - local STT word start/end timestamp calibration과 signed scorer receipt
 - audited `--no_telemetry` ORT build, model weight 법무 승인, signed manifest, SBOM, third-party notice
-- Windows x64, macOS x64 target wheel/bundle과 실제 OS별 clean install·restart·API parity
+- Windows x64 실제 모델 추론과 macOS Intel ORT/Fbank no-telemetry source build·모델 추론
 - 남성-남성/여성-여성/남녀, 8/16 kHz, overlap, third-party, long-file multi-recording calibration/independent holdout
 - 실제 Xeon Gold 6230R 1.00-CPU cgroup-v1의 process-tree RSS, cold/warm 반복, full-hour profile
 - 실제 GenOS/service adapter, persistence와 manual correction UI

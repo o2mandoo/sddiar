@@ -87,6 +87,12 @@ macOS arm64 fresh venv와 Linux x86_64 emulated clean install을 통과했다.
 포함된 공식 ONNX Runtime wheel은 개발용이다. production에는 별도 승인된
 `--no_telemetry` build가 필요하다.
 
+공개 checkout 기준 native CI도 Linux x64, Windows x64, macOS Arm, macOS
+Intel에서 모두 통과했다. 각 lane은 wheel build/fresh install/test/import,
+zero-network source scan과 전체 Git media-history scan을 수행한다. macOS Intel은
+공식 ORT/Fbank wheel이 없어 core wheel 계약만 검증했다.
+[CI evidence](experiments/260826_platform_ci/evidence.json)
+
 ## 화자분리 CLI
 
 ```sh

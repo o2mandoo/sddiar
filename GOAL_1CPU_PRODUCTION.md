@@ -93,6 +93,14 @@
 - cold/warm, cgroup CPU, process-tree RSS/PSS, stage wall/CPU, I/O를 함께 기록
 - full-hour 5회 이하는 median/max로 보고하고, release p95는 20~30회 뒤 주장한다.
 
+## native 플랫폼 package gate
+
+- GitHub-hosted Linux x64, Windows x64, macOS Arm, macOS Intel native runner의 clean checkout CI는 통과했다.
+- 네 lane 모두 wheel build, fresh install, test, architecture, zero-network, Git media-history 검사를 수행했다.
+- Windows/Linux/macOS Arm은 공식 개발 runtime의 CPUExecutionProvider와 Fbank import까지 통과했다.
+- macOS Intel은 공식 ORT 1.29/Fbank 1.22.3 wheel 부재로 core wheel만 통과했으며 source build/model inference는 미검증이다.
+- 이 결과는 package/API portability 증거이며 네 OS의 실제 Silero/WeSpeaker model inference 증거가 아니다.
+
 ## STT 통합과 대체 gate
 
 - `ProductionOrchestrator`는 supplied word timeline과 hash-bound local STT를 지원한다.

@@ -17,9 +17,9 @@ false until a target-native source build and independent audit are complete.
   thread policy applied separately.
 
 The reproducibility pins used by the v1.29.0 upstream CI are CMake 3.31.8
-(SHA-256
+(SHA-512
 `99cc9c63ae49f21253efb5921de2ba84ce136018abf08632c92c060ba91d552e0f6acc214e9ba8123dee0cf6d1cf089ca389e321879fd9d719a60d975bcffcc8`)
-and vcpkg 2025.08.27 (SHA-256
+and vcpkg 2025.08.27 (SHA-512
 `9a4b32849792e13bee1d24726f073b3881acae4165206ddf1a6378e44a4ddd05b3ee93f55ff46d8e8873b3cbcd06606212989e248f0bd615a5bf365070074079`).
 Use Visual Studio 17 2022 x64 on Windows and the upstream GCC 14 native
 container family on Linux (`cpu_x86_64_almalinux8_gcc14:20251017.1` or
