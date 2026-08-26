@@ -123,12 +123,12 @@ class _FakeLocalSttEngine:
         self.calls = 0
         self.seen = []
 
-    def transcribe(self, canonical_audio_path, source, identity):
+    def transcribe(self, canonical_audio_path, source):
         self.calls += 1
         with wave.open(str(canonical_audio_path), "rb") as handle:
             self.seen.append((
                 handle.getframerate(), handle.getnframes(), source.duration_us,
-                identity.backend_id,
+                "offline-stt-test",
             ))
         return self.timeline
 
@@ -173,7 +173,7 @@ class _InterveningSpeakerDiarizer:
 
 
 class _FailingLocalSttEngine:
-    def transcribe(self, canonical_audio_path, source, identity):
+    def transcribe(self, canonical_audio_path, source):
         raise RuntimeError("SECRET_STT_EXCEPTION /private/transcript.txt")
 
 
@@ -181,7 +181,7 @@ class _MutatingLocalSttEngine:
     def __init__(self, timeline):
         self.timeline = timeline
 
-    def transcribe(self, canonical_audio_path, source, identity):
+    def transcribe(self, canonical_audio_path, source):
         path = Path(canonical_audio_path)
         with wave.open(str(path), "rb") as handle:
             rate, frames = handle.getframerate(), handle.getnframes()
@@ -193,9 +193,10 @@ class _MutatingLocalSttEngine:
 class _MutatingSttArtifactEngine:
     def __init__(self, timeline):
         self.timeline = timeline
+        self.model_path = None
 
-    def transcribe(self, canonical_audio_path, source, identity):
-        identity.model_artifact.path.write_bytes(b"mutated during inference")
+    def transcribe(self, canonical_audio_path, source):
+        self.model_path.write_bytes(b"mutated during inference")
         return self.timeline
 
 
@@ -206,7 +207,7 @@ class _ConcurrentLocalSttEngine:
         self.maximum = 0
         self.lock = threading.Lock()
 
-    def transcribe(self, canonical_audio_path, source, identity):
+    def transcribe(self, canonical_audio_path, source):
         with self.lock:
             self.active += 1
             self.maximum = max(self.maximum, self.active)
@@ -344,6 +345,8 @@ class ProductionOrchestratorTests(unittest.TestCase):
             model_sha256=hashlib.sha256(model_path.read_bytes()).hexdigest(),
         )
         implementation = implementation or _FakeLocalSttEngine(timeline)
+        if hasattr(implementation, "model_path"):
+            implementation.model_path = model_path
         return HashVerifiedLocalTranscriptBackend(identity, implementation), implementation, model_path
 
     @staticmethod

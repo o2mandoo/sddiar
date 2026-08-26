@@ -47,6 +47,13 @@ from .production_orchestrator import (
     canonical_production_config_hash,
     verify_local_stt_identity,
 )
+from .whispercpp_backend import (
+    WHISPER_CPP_BACKEND_ID,
+    WHISPER_CPP_BACKEND_VERSION,
+    WHISPER_CPP_COMMIT,
+    WhisperCppBackend,
+    WhisperCppConfig,
+)
 
 __all__ = [
     "TimeWarp", "Timebase", "TimeWarpSegment", "AudioRequest", "AudioSourceMetadata",
@@ -76,5 +83,7 @@ __all__ = [
     "SuppliedWordsBackend", "SuppliedWordTimelineProvider",
     "LocalSttEngine", "LocalSttTranscriptPayload", "VerifiedLocalSttIdentity",
     "HashVerifiedLocalTranscriptBackend", "verify_local_stt_identity",
+    "WhisperCppBackend", "WhisperCppConfig", "WHISPER_CPP_BACKEND_ID",
+    "WHISPER_CPP_BACKEND_VERSION", "WHISPER_CPP_COMMIT",
     "canonical_production_config_hash",
 ]

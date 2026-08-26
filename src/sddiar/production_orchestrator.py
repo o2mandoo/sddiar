@@ -20,7 +20,6 @@ import platform
 import re
 import stat
 import struct
-import tempfile
 import threading
 import wave
 from contextlib import contextmanager
@@ -135,7 +134,6 @@ class LocalSttEngine(Protocol):
         self,
         canonical_audio_path: Path,
         source: AudioSourceMetadata,
-        identity: "VerifiedLocalSttIdentity",
     ) -> WordTimeline: ...
 
 
@@ -283,6 +281,9 @@ class HashVerifiedLocalTranscriptBackend:
             raise ContractValidationError("local STT identity must be verifier-created")
         if implementation is None or not callable(getattr(implementation, "transcribe", None)):
             raise ContractValidationError("local STT implementation is invalid")
+        implementation_identity = getattr(implementation, "identity", None)
+        if implementation_identity is not None and implementation_identity != identity:
+            raise ContractValidationError("local STT implementation identity differs")
         identity.assert_artifacts_unchanged()
         self._identity = identity
         self._implementation = implementation
@@ -290,6 +291,18 @@ class HashVerifiedLocalTranscriptBackend:
     @property
     def identity(self) -> VerifiedLocalSttIdentity:
         return self._identity
+
+    @property
+    def decoder_policy(self) -> Mapping[str, Any] | None:
+        """Expose scalar decoder identity for a redacted production receipt."""
+        config = getattr(self._implementation, "config", None)
+        public_identity = getattr(config, "public_identity", None)
+        if not callable(public_identity):
+            return None
+        value = public_identity()
+        if not isinstance(value, Mapping):
+            raise ContractValidationError("local STT decoder identity is invalid")
+        return dict(value)
 
     def transcribe(
         self,
@@ -299,9 +312,10 @@ class HashVerifiedLocalTranscriptBackend:
     ) -> LocalSttTranscriptPayload:
         self._identity.assert_artifacts_unchanged()
         try:
-            timeline = self._implementation.transcribe(
-                canonical_audio.canonical_path, source, self._identity
-            )
+            implementation_identity = getattr(self._implementation, "identity", None)
+            if implementation_identity is not None and implementation_identity != self._identity:
+                raise ProductionOrchestrationError("local STT implementation identity differs")
+            timeline = self._implementation.transcribe(canonical_audio.canonical_path, source)
         except MemoryError:
             raise
         except Exception:
@@ -615,6 +629,8 @@ class Pcm16CanonicalAdapter:
 
     @contextmanager
     def prepare(self, source_path: str | os.PathLike[str]) -> Iterator[CanonicalAudio]:
+        import tempfile
+
         with tempfile.TemporaryDirectory(prefix="sddiar-canonical-") as directory:
             root = Path(directory)
             try:
@@ -1577,6 +1593,7 @@ class ProductionOrchestrator:
                 "backend_version": None,
                 "engine_sha256": None,
                 "model_sha256": None,
+                "decoder_policy": None,
             }
         if self._transcript_backend is None:
             return timeline, {
@@ -1585,6 +1602,7 @@ class ProductionOrchestrator:
                 "backend_version": None,
                 "engine_sha256": None,
                 "model_sha256": None,
+                "decoder_policy": None,
             }
         payload = self._transcript_backend.transcribe(
             request, canonical.source, canonical
@@ -1606,6 +1624,7 @@ class ProductionOrchestrator:
             "engine_sha256": payload.engine_sha256,
             "model_sha256": payload.model_sha256,
             "implementation_binding": "INJECTED_CONTRACT_REQUIRES_RELEASE_AUDIT",
+            "decoder_policy": self._transcript_backend.decoder_policy,
         }
 
     def _quality(
