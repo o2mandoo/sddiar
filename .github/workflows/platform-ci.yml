@@ -1,0 +1,109 @@
+name: platform-ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: platform-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux-x86_64
+            os: ubuntu-24.04
+            arch: x86_64
+            runtime: true
+          - name: windows-x86_64
+            os: windows-2025
+            arch: x86_64
+            runtime: true
+          - name: macos-arm64
+            os: macos-15
+            arch: arm64
+            runtime: true
+          - name: macos-x86_64
+            os: macos-15-intel
+            arch: x86_64
+            runtime: false
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+      PIP_DISABLE_PIP_VERSION_CHECK: "1"
+      PIP_NO_INPUT: "1"
+
+    steps:
+      - name: Check out exact source history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up CPython 3.11
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.11"
+
+      - name: Install pinned build tooling
+        run: >-
+          python -m pip install
+          build==1.5.0 setuptools==84.0.0 wheel==0.48.0
+
+      - name: Build wheel from checkout
+        run: python -m build --wheel --no-isolation
+
+      - name: Install exact optional CPU runtime
+        if: matrix.runtime == true
+        run: >-
+          python -m pip install
+          flatbuffers==25.12.19
+          kaldi-native-fbank==1.22.3
+          numpy==2.4.6
+          onnxruntime==1.29.0
+          packaging==26.3
+          protobuf==7.36.0
+
+      - name: Install the freshly built wheel
+        run: >-
+          python -c "import pathlib,subprocess,sys;
+          wheels=list(pathlib.Path('dist').glob('sddiar-0.4.0-*.whl'));
+          assert len(wheels)==1;
+          subprocess.check_call([sys.executable,'-m','pip','install','--no-deps',str(wheels[0])])"
+
+      - name: Verify native runtime provider
+        if: matrix.runtime == true
+        run: >-
+          python -c "import json,kaldi_native_fbank,numpy,onnxruntime,platform;
+          assert 'CPUExecutionProvider' in onnxruntime.get_available_providers();
+          print(json.dumps({'architecture':platform.machine(),
+          'providers':onnxruntime.get_available_providers()},sort_keys=True))"
+
+      - name: Run installed-wheel test suite
+        run: python -m unittest discover -s tests -q
+
+      - name: Verify isolated no-index wheel install and architecture
+        run: >-
+          python scripts/ci_verify_wheel.py
+          --wheel-dir dist --source-root src
+          --expected-version 0.4.0 --expected-arch ${{ matrix.arch }}
+
+      - name: Enforce zero-network source policy
+        run: >-
+          python -c "from sddiar.release import scan_zero_network_policy;
+          issues=scan_zero_network_policy(['src/sddiar','scripts','bench/one_cpu']);
+          print({'issue_count':len(issues),'codes':sorted({item.code for item in issues})});
+          raise SystemExit(bool(issues))"
+
+      - name: Enforce no-media Git history
+        run: python scripts/verify_git_media_policy.py
