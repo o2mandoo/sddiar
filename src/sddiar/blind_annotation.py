@@ -783,7 +783,7 @@ def build_blind_annotation_pack(source_path: str | os.PathLike[str], output_root
         annotator_sha = _write_file(annotator_path, _canonical_json({"schema_version": ANNOTATOR_SCHEMA_VERSION, "clips": annotator_rows}) + b"\n")
         template_path = annotator_dir / "label_template.jsonl"
         template_sha = _write_file(template_path, b"".join(_canonical_json(row) + b"\n" for row in template_rows))
-        evaluator_manifest = {"schema_version": SCHEMA_VERSION, "source": {"audio_sha256": source_sha, "sample_rate_hz": layout.sample_rate_hz, "frame_count": layout.frame_count, "duration_us": duration_us}, "provenance": {"reference_timing_sha256": reference_sha, "system_timing_sha256": system_sha, "speaker_labels_used": False, "transcript_text_used": False, "selection_inputs_are_source_time_only": True, "presentation_nonce_sha256": hashlib.sha256(nonce).hexdigest(), "annotator_manifest_sha256": annotator_sha, "label_template_sha256": template_sha}, "policy": {"offline": True, "seed": int(seed), "clip_seconds": float(clip_seconds), "clip_count": EXPECTED_CLIP_COUNT, "category_counts_are_sampling_metadata_only": True, "do_not_sum_categories_for_metrics": True, "metric_intervals_non_overlapping": True}, "selection": selection, "clips": evaluator_rows}
+        evaluator_manifest = {"schema_version": SCHEMA_VERSION, "source": {"audio_sha256": source_sha, "sample_rate_hz": layout.sample_rate_hz, "frame_count": layout.frame_count, "duration_us": duration_us}, "provenance": {"reference_timing_sha256": reference_sha, "system_timing_sha256": system_sha, "speaker_identity_used": False, "system_status_markers_used": True, "transcript_text_used": False, "selection_inputs_are_source_time_and_status_only": True, "presentation_nonce_sha256": hashlib.sha256(nonce).hexdigest(), "annotator_manifest_sha256": annotator_sha, "label_template_sha256": template_sha}, "policy": {"offline": True, "seed": int(seed), "clip_seconds": float(clip_seconds), "clip_count": EXPECTED_CLIP_COUNT, "category_counts_are_sampling_metadata_only": True, "do_not_sum_categories_for_metrics": True, "metric_intervals_non_overlapping": True}, "selection": selection, "clips": evaluator_rows}
         manifest_path = stage / "manifest.json"
         manifest_sha = _write_file(manifest_path, _canonical_json(evaluator_manifest) + b"\n")
         _write_file(stage / "manifest.sha256", (manifest_sha + "  manifest.json\n").encode("ascii"))
@@ -904,15 +904,16 @@ def verify_pack(pack_root: str | os.PathLike[str], expected_manifest_sha256: str
         raise BlindAnnotationError("evaluator source values are invalid")
     provenance = manifest.get("provenance")
     expected_provenance = {
-        "reference_timing_sha256", "system_timing_sha256", "speaker_labels_used",
-        "transcript_text_used", "selection_inputs_are_source_time_only",
+        "reference_timing_sha256", "system_timing_sha256", "speaker_identity_used",
+        "system_status_markers_used", "transcript_text_used",
+        "selection_inputs_are_source_time_and_status_only",
         "presentation_nonce_sha256", "annotator_manifest_sha256", "label_template_sha256",
     }
     if not isinstance(provenance, Mapping) or set(provenance) != expected_provenance:
         raise BlindAnnotationError("evaluator provenance schema mismatch")
     for key in ("reference_timing_sha256", "system_timing_sha256", "presentation_nonce_sha256", "annotator_manifest_sha256", "label_template_sha256"):
         _strict_hash(provenance[key], key)
-    if provenance["speaker_labels_used"] is not False or provenance["transcript_text_used"] is not False or provenance["selection_inputs_are_source_time_only"] is not True:
+    if provenance["speaker_identity_used"] is not False or provenance["system_status_markers_used"] is not True or provenance["transcript_text_used"] is not False or provenance["selection_inputs_are_source_time_and_status_only"] is not True:
         raise BlindAnnotationError("evaluator privacy provenance mismatch")
     policy = manifest.get("policy")
     expected_policy = {"offline", "seed", "clip_seconds", "clip_count", "category_counts_are_sampling_metadata_only", "do_not_sum_categories_for_metrics", "metric_intervals_non_overlapping"}
