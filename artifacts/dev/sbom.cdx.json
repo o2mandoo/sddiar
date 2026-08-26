@@ -7,12 +7,12 @@
     "component": {
       "type": "application",
       "name": "sddiar",
-      "version": "0.3.0",
-      "purl": "pkg:pypi/sddiar@0.3.0",
+      "version": "0.4.0",
+      "purl": "pkg:pypi/sddiar@0.4.0",
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "695e332892fdc16225a924cabde56e58d9de2906bfa95eed2db29f5207fdd631"
+          "content": "5cd27e1387806c0af763978100aa51a4cde15a40b2b1b8645df1ee24417cad87"
         }
       ],
       "properties": [

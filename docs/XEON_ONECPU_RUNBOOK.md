@@ -50,8 +50,8 @@ export ORT_DISABLE_TELEMETRY=1
   --model-sha256 1a153a22f4509e292a94e67d6f9b85e8deb25b4988682b7e174c65279d8788e3 \
   --model artifacts/dev/models/voxceleb_resnet34.onnx \
   --model-sha256 9fea6516d7ad6bf0a76c7689f5a49b65d330fad6dde96c91bb4435ffbfe056a1 \
-  --wheel artifacts/dev-linux-x86_64/wheels/sddiar-0.3.0-py3-none-any.whl \
-  --wheel-sha256 695e332892fdc16225a924cabde56e58d9de2906bfa95eed2db29f5207fdd631 \
+  --wheel artifacts/dev-linux-x86_64/wheels/sddiar-0.4.0-py3-none-any.whl \
+  --wheel-sha256 5cd27e1387806c0af763978100aa51a4cde15a40b2b1b8645df1ee24417cad87 \
   --lock artifacts/dev-linux-x86_64/requirements.lock \
   --lock-sha256 c473b7f1a55590c0cffc7fa675556a36ea3676a9f8b1a9eb384eafd328a2e401
 ```

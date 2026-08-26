@@ -12,5 +12,5 @@ packaging==26.3 \
     --hash=sha256:d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c
 protobuf==7.36.0 \
     --hash=sha256:70f5ec8eb0da81a44360c0dc0beac99a0d78071d21956a7076bae8bd2051841b
-sddiar==0.3.0 \
-    --hash=sha256:695e332892fdc16225a924cabde56e58d9de2906bfa95eed2db29f5207fdd631
+sddiar==0.4.0 \
+    --hash=sha256:5cd27e1387806c0af763978100aa51a4cde15a40b2b1b8645df1ee24417cad87

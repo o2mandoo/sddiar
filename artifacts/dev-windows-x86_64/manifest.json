@@ -1,13 +1,13 @@
 {
   "schema_version": "1.0",
   "pack_id": "development-windows-x86_64-cp311-20260826",
-  "pack_version": "0.3.0-dev1",
+  "pack_version": "0.4.0-dev1",
   "production_approved": false,
   "target": "windows-x86_64-cp311",
   "purpose": "Development-only wheel ingress for a Windows x64 CPython 3.11 host; the PyPI ONNX Runtime wheel is not evidence of a no-telemetry production build",
   "offline_lock": {
     "path": "requirements.lock",
-    "sha256": "30890c1b56ff29732ae8c868e52fa8c8a65e2d46d2033d7e990a229ed6b080f0"
+    "sha256": "9ca6eaa66fa6701e49809b1850041615fb79e51dbae3dd29eba7f16cacdbb085"
   },
   "runtime_policy": {
     "execution_provider": "CPUExecutionProvider",
@@ -33,6 +33,6 @@
     {"path": "wheels/onnxruntime-1.29.0-cp311-cp311-win_amd64.whl", "sha256": "0d4f427afac434b0070fe992b540ddf20a7aff2265f760f314d91331935b6b98"},
     {"path": "wheels/packaging-26.3-py3-none-any.whl", "sha256": "d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c"},
     {"path": "wheels/protobuf-7.36.0-cp310-abi3-win_amd64.whl", "sha256": "1781cc1de61249b750848029bca452c0a8b7e990080316b9bbc2518b2117b488"},
-    {"path": "wheels/sddiar-0.3.0-py3-none-any.whl", "sha256": "695e332892fdc16225a924cabde56e58d9de2906bfa95eed2db29f5207fdd631"}
+    {"path": "wheels/sddiar-0.4.0-py3-none-any.whl", "sha256": "5cd27e1387806c0af763978100aa51a4cde15a40b2b1b8645df1ee24417cad87"}
   ]
 }

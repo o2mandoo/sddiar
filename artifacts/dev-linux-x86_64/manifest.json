@@ -1,13 +1,13 @@
 {
   "schema_version": "1.0",
   "pack_id": "development-linux-x86_64-xeon-candidate-20260826",
-  "pack_version": "0.3.0-dev1",
+  "pack_version": "0.4.0-dev1",
   "production_approved": false,
   "target": "linux-x86_64-cp311",
   "purpose": "Development wheel ingress for the Xeon cgroup-v1 target; official ORT is not the production no-telemetry build",
   "offline_lock": {
     "path": "requirements.lock",
-    "sha256": "c473b7f1a55590c0cffc7fa675556a36ea3676a9f8b1a9eb384eafd328a2e401"
+    "sha256": "568d96576a6487025cf5c867c65eb64e8342b779a5382ee257d024ede0bdc0bc"
   },
   "runtime_policy": {
     "execution_provider": "CPUExecutionProvider",
@@ -24,6 +24,6 @@
     {"path": "wheels/onnxruntime-1.29.0-cp311-cp311-manylinux_2_28_x86_64.whl", "sha256": "85f8e8406c52658735fe5c7fbfd3ebaa1ed340768324f6252e4274e374580a23"},
     {"path": "wheels/packaging-26.3-py3-none-any.whl", "sha256": "d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c"},
     {"path": "wheels/protobuf-7.36.0-cp310-abi3-manylinux2014_x86_64.whl", "sha256": "70f5ec8eb0da81a44360c0dc0beac99a0d78071d21956a7076bae8bd2051841b"},
-    {"path": "wheels/sddiar-0.3.0-py3-none-any.whl", "sha256": "695e332892fdc16225a924cabde56e58d9de2906bfa95eed2db29f5207fdd631"}
+    {"path": "wheels/sddiar-0.4.0-py3-none-any.whl", "sha256": "5cd27e1387806c0af763978100aa51a4cde15a40b2b1b8645df1ee24417cad87"}
   ]
 }

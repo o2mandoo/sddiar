@@ -36,7 +36,7 @@ runtime 코드는 모델·wheel을 다운로드하지 않는다. macOS arm64와 
 
 - manifest: `artifacts/dev/manifest.json`
 - offline lock: `artifacts/dev/requirements-macos-arm64-cp311.lock`
-- library wheel: `artifacts/dev/wheels/sddiar-0.3.0-py3-none-any.whl`
+- library wheel: `artifacts/dev/wheels/sddiar-0.4.0-py3-none-any.whl`
 - development SBOM/notice: `artifacts/dev/sbom.cdx.json`, `artifacts/dev/THIRD_PARTY_NOTICES.md`
 - Silero SHA-256: `1a153a22f4509e292a94e67d6f9b85e8deb25b4988682b7e174c65279d8788e3`
 - WeSpeaker SHA-256: `9fea6516d7ad6bf0a76c7689f5a49b65d330fad6dde96c91bb4435ffbfe056a1`

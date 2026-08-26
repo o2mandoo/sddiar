@@ -5,7 +5,7 @@ This image is a Linux arm64 development proxy for the target Kubernetes quota sh
 Build from the repository root:
 
 ```sh
-docker build --network=none -f bench/one_cpu/Dockerfile -t sddiar-onecpu:0.3.0 .
+docker build --network=none -f bench/one_cpu/Dockerfile -t sddiar-onecpu:0.4.0 .
 ```
 
 Runtime invariants:
@@ -32,7 +32,7 @@ docker run --rm --network=none --cpus=1 --memory=256m --read-only \
   --mount type=bind,src=/local/input.wav,dst=/input/input.wav,readonly \
   --mount type=bind,src=/local/models,dst=/models,readonly \
   --mount type=bind,src=/local/results,dst=/results \
-  sddiar-onecpu:0.3.0 \
+  sddiar-onecpu:0.4.0 \
   /opt/sddiar/bench/one_cpu/run_repeated_worker.py \
   /input/input.wav \
   --silero-model /models/silero_vad.onnx \
