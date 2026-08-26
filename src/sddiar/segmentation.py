@@ -294,16 +294,12 @@ class RuleEvidenceSegmentation:
     ) -> SegmentationEvidence:
         speech_regions = self._speech_regions(view_id, vad_frames)
         discontinuities = self._probe_discontinuities(probes)
-        # Do not silently promote mappings or diagnostic evidence.  A caller
-        # using this explicitly approved seam must provide the capability type.
-        for event in approved_scd_events:
-            if type(event) is not _EnforceableSpeakerChangeEvent:
-                raise ContractValidationError("approved_scd_events requires enforceable SCD events")
-        for event in approved_overlap_regions:
-            if type(event) is not _EnforceableOverlapEvent:
-                raise ContractValidationError("approved_overlap_regions requires enforceable OSD events")
-        scd_events = tuple(sorted(approved_scd_events, key=lambda event: (event.time_us, event.evidence_id)))
-        overlaps = tuple(sorted(approved_overlap_regions, key=lambda event: (event.start_us, event.end_us)))
+        if approved_scd_events or approved_overlap_regions:
+            raise ContractValidationError(
+                "SCD/OSD enforcement is unavailable; use shadow boundary evidence"
+            )
+        scd_events: tuple[_EnforceableSpeakerChangeEvent, ...] = ()
+        overlaps: tuple[_EnforceableOverlapEvent, ...] = ()
         return SegmentationEvidence(speech_regions, scd_events, overlaps, discontinuities)
 
     def _speech_regions(self, view_id: str, frames: Sequence[VadFrame]) -> tuple[SpeechRegion, ...]:

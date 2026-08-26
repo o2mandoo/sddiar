@@ -261,26 +261,14 @@ def build_tracklets(
     """Create non-overlap tracklets and preserve high-overlap spans separately."""
 
     cfg = cfg or DiarizationConfig()
-    # Capability boundary: only the concrete event values emitted by an
-    # approved segmentation gate may alter tracklets.  In particular, do not
-    # accept mappings, duck-typed objects, or diagnostic evidence with an
-    # ``approved``/``is_high`` flag: those are observational by contract.
-    from .segmentation import _EnforceableOverlapEvent, _EnforceableSpeakerChangeEvent
-
-    for event in scd_events:
-        if type(event) is not _EnforceableSpeakerChangeEvent:
-            raise ContractValidationError(
-                "scd_events must contain exact sealed enforceable SCD values"
-            )
-        if event.source_id != audio_id:
-            raise ContractValidationError("SCD event source does not match audio_id")
-    for region in overlap_regions:
-        if type(region) is not _EnforceableOverlapEvent:
-            raise ContractValidationError(
-                "overlap_regions must contain exact sealed enforceable OSD values"
-            )
-        if region.source_id != audio_id:
-            raise ContractValidationError("OSD event source does not match audio_id")
+    # SCD/OSD is shadow-only in this release. A calibration profile authorizes
+    # thresholds, not arbitrary per-job event bytes. Until a signed evidence
+    # attestation is verified at this consumer boundary, every non-empty event
+    # sequence is rejected regardless of Python type or private-token access.
+    if scd_events or overlap_regions:
+        raise ContractValidationError(
+            "SCD/OSD enforcement is unavailable; use shadow boundary evidence"
+        )
     protected = _merge_protected_overlap(overlap_regions, cfg, audio_id)
     tracklets: list[Tracklet] = []
     boundary_ids: list[str] = []

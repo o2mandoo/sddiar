@@ -25,9 +25,6 @@ from sddiar.segmentation import (
     authorize_scd_event,
     clip_and_coalesce_speech_mask,
 )
-from boundary_test_helpers import sealed_osd, sealed_scd
-
-
 class ReleaseVerifier(DigestCalibrationSignatureVerifier):
     trust_level = "RELEASE"
 
@@ -174,14 +171,14 @@ class BoundaryEvidenceTests(unittest.TestCase):
         with self.assertRaises(ContractValidationError):
             build_tracklets(({"start_us": 0, "end_us": 2_000_000},), overlap_regions=(OverlapEvent(500_000, 1_000_000, 1.0),))
 
-    def test_tracklet_builder_accepts_only_release_authorized_values(self):
-        scd = sealed_scd(1_000_000, 0.9, "approved")
-        osd = sealed_osd(500_000, 700_000, 0.9, ("osd",))
-        result = build_tracklets(
-            ({"start_us": 0, "end_us": 2_000_000},), scd_events=(scd,), overlap_regions=(osd,),
-            cfg=DiarizationConfig(min_split_side_us=100_000),
-        )
-        self.assertEqual([(item.start_us, item.end_us) for item in result.tracklets], [(0, 500_000), (700_000, 1_000_000), (1_000_000, 2_000_000)])
+    def test_tracklet_builder_rejects_boundary_enforcement_even_for_release_like_mappings(self):
+        with self.assertRaises(ContractValidationError):
+            build_tracklets(
+                ({"start_us": 0, "end_us": 2_000_000},),
+                scd_events=({"time_us": 1_000_000, "evidence": 1.0, "approved": True},),
+                overlap_regions=({"start_us": 500_000, "end_us": 700_000, "is_high": True},),
+                cfg=DiarizationConfig(min_split_side_us=100_000),
+            )
 
 
 if __name__ == "__main__":
