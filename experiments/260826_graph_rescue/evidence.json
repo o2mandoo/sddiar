@@ -1,0 +1,142 @@
+{
+  "schema": "sddiar.graph_rescue_experiment_evidence_v1",
+  "recorded_date": "2026-08-26",
+  "source_commit": "1669afff952f56336bb957b3820a0a63bc66b019",
+  "experimental": true,
+  "default_enabled": false,
+  "production_approved": false,
+  "quality_status": "REVIEW_REQUIRED",
+  "release_authority": "none",
+  "input": {
+    "audio_sha256_prefix": "d78b53216085",
+    "duration_us": 3171732000,
+    "sample_rate_hz": 16000,
+    "channels": 1,
+    "reference_kind": "clova_note_single_recording_timing_proxy",
+    "reference_timing_sha256": "4bf0f648015632a5acd78a861b9093dcf10d4ad473daebc6cc727173ec332904"
+  },
+  "models": {
+    "silero_vad_sha256": "1a153a22f4509e292a94e67d6f9b85e8deb25b4988682b7e174c65279d8788e3",
+    "wespeaker_resnet34_sha256": "9fea6516d7ad6bf0a76c7689f5a49b65d330fad6dde96c91bb4435ffbfe056a1"
+  },
+  "environment": {
+    "host": "Apple M5 Max",
+    "os_arch": "macOS_arm64",
+    "inference_threads": 1,
+    "cpu_constraint": "one_inference_thread_not_cgroup_quota",
+    "target_xeon_evidence": false
+  },
+  "fixed_graph_policy": {
+    "adjacency_mode": "bounded_knn",
+    "k_neighbors": 8,
+    "propagation_steps": 1,
+    "seed_mode": "ANCHOR_ONLY",
+    "min_anchor_blocks": 2,
+    "min_posterior": 0.6,
+    "posterior_margin_min": 0.15,
+    "leave_block_margin_min": 0.05,
+    "max_edge_distance": 0.75,
+    "policy_sha256": "d41dedfc6ae5d7bf490d65856d0dfbc473813f374bea8442060f3715f8a00d22"
+  },
+  "primary_strict_upstream_run": {
+    "candidate_computation_reference_usage": "none",
+    "reference_usage": "posthoc_proxy_scoring_only",
+    "upstream_assignment_calibration": false,
+    "runtime": {
+      "total_wall_seconds": 31.5195,
+      "total_rtf": 0.009938,
+      "graph_and_proxy_scoring_wall_seconds": 0.315473,
+      "peak_rss_mib": 211.45,
+      "node_count": 929,
+      "edge_count": 7423,
+      "distance_evaluations": 862112
+    },
+    "baseline": {
+      "complete_merge": 0.0,
+      "reference_timeline_coverage": 0.3378215074109114,
+      "speaker_accuracy_given_assigned": 0.9905305293344485,
+      "speaker_mapped_time_accuracy_end_to_end": 0.3346225165562914,
+      "turn_coverage": 0.6923076923076923,
+      "turn_accuracy_given_covered": 0.9236111111111112,
+      "unknown_rate_on_output_speech": 0.2796212610286206,
+      "worst_speaker_accuracy_given_assigned": 0.945436049200037,
+      "worst_speaker_reference_timeline_coverage": 0.1375262321144674,
+      "speaker_coverage_gap": 0.33201062099583056
+    },
+    "candidate": {
+      "candidate_count": 316,
+      "rescued_duration_us": 320256000,
+      "changed_existing_assigned_us": 0,
+      "complete_merge": 0.0,
+      "reference_timeline_coverage": 0.4388167770419426,
+      "speaker_accuracy_given_assigned": 0.9799581455247908,
+      "speaker_mapped_time_accuracy_end_to_end": 0.43002207505518764,
+      "turn_coverage": 0.8461538461538461,
+      "turn_accuracy_given_covered": 0.9375,
+      "unknown_rate_on_output_speech": 0.06425650957607058,
+      "worst_speaker_accuracy_given_assigned": 0.9284726065301605,
+      "worst_speaker_reference_timeline_coverage": 0.27579014308426075,
+      "speaker_coverage_gap": 0.27023390291678473,
+      "newly_rescued_proxy_precision": 0.9445943245403677,
+      "candidate_identity_digest": "9feeb1c41d1564d916bd478f97ac5720dc5f339dba600f2430990ac6a479aabc"
+    }
+  },
+  "secondary_reference_calibrated_upstream_run": {
+    "candidate_computation_reference_usage": "indirect_via_upstream_assignment_profile",
+    "reference_usage": "upstream_60_percent_calibration_and_full_recording_posthoc_scoring",
+    "upstream_assignment_calibration": true,
+    "runtime": {
+      "total_wall_seconds": 30.6389,
+      "total_rtf": 0.00966,
+      "graph_and_proxy_scoring_wall_seconds": 0.283907,
+      "peak_rss_mib": 213.59,
+      "node_count": 798,
+      "edge_count": 6374,
+      "distance_evaluations": 636006
+    },
+    "baseline": {
+      "reference_timeline_coverage": 0.404319142226427,
+      "speaker_accuracy_given_assigned": 0.9896107623766083,
+      "turn_coverage": 0.7692307692307693,
+      "turn_accuracy_given_covered": 0.925,
+      "worst_speaker_accuracy_given_assigned": 0.9549608727937396
+    },
+    "candidate": {
+      "candidate_count": 186,
+      "rescued_duration_us": 135360000,
+      "changed_existing_assigned_us": 0,
+      "reference_timeline_coverage": 0.4470059918006938,
+      "speaker_accuracy_given_assigned": 0.9793714937183235,
+      "turn_coverage": 0.8798076923076923,
+      "turn_accuracy_given_covered": 0.9453551912568307,
+      "worst_speaker_accuracy_given_assigned": 0.9378846987429562,
+      "newly_rescued_proxy_precision": 0.8823877068557919,
+      "candidate_identity_digest": "024d3403f16d098bb8484f38102caa117e56eb412308964ba52fb61871ee8acd"
+    }
+  },
+  "gates_on_primary_run": {
+    "existing_assigned_exact_parity": true,
+    "complete_merge_zero": true,
+    "newly_rescued_proxy_precision_gte_0_95": false,
+    "overall_assigned_accuracy_gte_0_985": false,
+    "worst_speaker_accuracy_gte_0_95": false,
+    "graph_wall_overhead_lte_5_percent_of_baseline": true,
+    "all_quality_gates_passed": false
+  },
+  "decision": "REJECT_PRECISION_AND_WORST_SPEAKER_GATE",
+  "limitations": [
+    "single_recording_clova_timing_proxy_is_not_der_or_release_ground_truth",
+    "host_run_is_not_xeon_cgroup_v1_evidence",
+    "secondary_run_depends_on_same_recording_upstream_calibration",
+    "candidate_must_remain_default_off",
+    "same_recording_threshold_retuning_is_prohibited"
+  ],
+  "privacy": {
+    "audio": "omitted",
+    "transcript_text": "omitted",
+    "local_paths": "omitted",
+    "speaker_names": "omitted",
+    "embedding_vectors": "omitted",
+    "tracklet_and_block_ids": "digest_only"
+  }
+}
