@@ -61,6 +61,8 @@ def _system(path: Path, *, marked: bool = True) -> None:
 
 class BlindAnnotationTests(unittest.TestCase):
     def _inputs(self, root: Path) -> tuple[Path, Path, Path]:
+        if blind_annotation.os.name == "nt":
+            self.skipTest("blind annotation pack is fail-closed until Windows ACL support exists")
         source, reference, system = root / "private-customer.wav", root / "reference.json", root / "system.json"
         _wav(source)
         _reference(reference)
@@ -76,6 +78,35 @@ class BlindAnnotationTests(unittest.TestCase):
             with mock.patch.object(blind_annotation.os, "open", return_value=17) as opened:
                 self.assertEqual(blind_annotation._open_nofollow(Path("audio.wav"), 3), 17)
         self.assertTrue(opened.call_args.args[1] & binary)
+
+    def test_windows_without_verified_owner_only_acl_is_fail_closed(self) -> None:
+        with mock.patch.object(blind_annotation.os, "name", "nt"):
+            with self.assertRaisesRegex(BlindAnnotationError, "Windows ACL support is unavailable"):
+                blind_annotation._require_owner_only_permission_support()
+
+    def test_windows_guard_precedes_all_input_and_output_inspection(self) -> None:
+        with mock.patch.object(blind_annotation.os, "name", "nt"):
+            with mock.patch.object(blind_annotation, "_regular_file", side_effect=AssertionError) as regular:
+                with mock.patch.object(blind_annotation, "_canonical_output_target", side_effect=AssertionError) as output:
+                    with self.assertRaisesRegex(BlindAnnotationError, "Windows ACL support is unavailable"):
+                        build_blind_annotation_pack(
+                            "source.wav",
+                            "pack",
+                            reference_path="reference.json",
+                            system_path="system.json",
+                        )
+            regular.assert_not_called()
+            output.assert_not_called()
+
+            with mock.patch.object(blind_annotation, "_reject_dotdot", side_effect=AssertionError) as reject:
+                with self.assertRaisesRegex(BlindAnnotationError, "Windows ACL support is unavailable"):
+                    verify_pack("pack", "a" * 64)
+            reject.assert_not_called()
+
+            with mock.patch.object(blind_annotation, "_regular_file", side_effect=AssertionError) as regular:
+                with self.assertRaisesRegex(BlindAnnotationError, "Windows ACL support is unavailable"):
+                    public_evidence("manifest.json")
+            regular.assert_not_called()
 
     def test_sealed_and_blind_bundles_are_deterministic_and_separate(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
@@ -201,6 +232,9 @@ class BlindAnnotationTests(unittest.TestCase):
             for directory in [result.manifest_path.parent, result.manifest_path.parent / "annotator", result.manifest_path.parent / "annotator" / "clips"]:
                 self.assertEqual(directory.stat().st_mode & 0o777, 0o700)
             self.assertEqual(hashlib.sha256(result.manifest_path.read_bytes()).hexdigest(), result.evidence["manifest_sha256"])
+            result.manifest_path.chmod(0o640)
+            with self.assertRaisesRegex(BlindAnnotationError, "owner-only"):
+                verify_pack(result.manifest_path.parent, result.evidence["manifest_sha256"])
 
 
 if __name__ == "__main__":

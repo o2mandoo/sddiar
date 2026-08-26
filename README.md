@@ -91,6 +91,12 @@ evaluator manifest와 annotator bundle은 분리되고 음성·빈 label은
 `.private/blind-annotation/` 아래에만 저장된다. 사람이 label을 입력하기 전에는
 정답셋이나 DER 증거로 부르지 않는다.
 
+이 private pack builder/verifier는 owner-only `0700/0600`을 검증할 수 있는
+POSIX 환경에서만 열린다. Windows의 `chmod`는 owner-only DACL을 보장하지
+못하므로 0.5에서는 이 기능만 명시적으로 fail-closed다. Windows core wheel과
+화자분리 API 지원은 유지되며, blind pack은 검증 가능한 ACL backend가 추가된
+후에만 Windows에서 개방한다.
+
 ## 폐쇄망 개발 설치
 
 아래 lock은 실제 1-CPU 장시간 evidence에 사용한 `0.4.0` development pack을
@@ -117,7 +123,7 @@ eda81dfe7ad265d2143ea465562bd9ee8d6646f774696e78f504f4e176fe5ea3
 development candidate 증거이며 production 서명 release를 의미하지 않는다.
 
 ```text
-8755c8ebcabd3623299e4c5fbd15957a1cec71fa5ae91eee9363cb169af3122a
+2b8a22bc4cf0cbe9f3a0a879ed8cb0c2c2d47830fc210bf7b19e52114c2d176f
 ```
 
 macOS arm64 fresh venv와 Linux x86_64 emulated clean install을 통과했다.
@@ -167,7 +173,7 @@ PYTHONPATH=src python3.11 scripts/verify_offline_release.py release \
   --production --scan-source src/sddiar
 ```
 
-2026-08-26 기준 CPython 3.11 개발 runtime에서 356개 unittest가 통과했다.
+2026-08-26 기준 CPython 3.11 개발 runtime에서 358개 unittest가 통과했다.
 `src/sddiar`, `scripts`, `bench/one_cpu` static zero-network scan은 issue 0건이다.
 production release root가 아직 없으므로 production 검증은
 `RELEASE_ROOT_MISSING`으로 fail-closed되는 것이 정상이다.

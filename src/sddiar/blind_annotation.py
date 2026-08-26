@@ -171,11 +171,23 @@ def _chmod(path: Path, mode: int) -> None:
         raise BlindAnnotationError(f"cannot set private permissions: {path.name}") from exc
 
 
+def _require_owner_only_permission_support() -> None:
+    # pathlib/os.chmod on Windows controls only the read-only attribute and
+    # cannot establish or verify an owner-only DACL.  Accepting its synthetic
+    # POSIX mode bits would make the private-audio claim false.  Keep this
+    # feature closed until a bounded Windows ACL backend is implemented.
+    if os.name == "nt":
+        raise BlindAnnotationError(
+            "blind annotation packs require enforceable POSIX owner-only permissions; "
+            "Windows ACL support is unavailable in 0.5"
+        )
+
+
 def _mkdir_private(path: Path, *, parents: bool = False) -> None:
     if path.exists() and path.is_symlink():
         raise BlindAnnotationError("private directory may not be a symlink")
     try:
-        path.mkdir(parents=parents, exist_ok=True)
+        path.mkdir(mode=0o700, parents=parents, exist_ok=True)
         if path.is_symlink() or not path.is_dir():
             raise BlindAnnotationError("private output component is not a directory")
         _chmod(path, 0o700)
@@ -625,11 +637,21 @@ def _select_specs(source_frames: int, rate: int, reference: Sequence[_TimingEven
 def _write_file(path: Path, payload: bytes) -> str:
     if path.exists() or path.is_symlink():
         raise BlindAnnotationError("refusing to overwrite private output")
+    fd: int | None = None
     try:
-        path.write_bytes(payload)
+        fd = _open_nofollow(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        _write_all(fd, payload)
+        os.fsync(fd)
+        os.close(fd)
+        fd = None
         _chmod(path, 0o600)
+    except BlindAnnotationError:
+        raise
     except OSError as exc:
         raise BlindAnnotationError("cannot write private output") from exc
+    finally:
+        if fd is not None:
+            os.close(fd)
     return hashlib.sha256(payload).hexdigest()
 
 
@@ -640,22 +662,26 @@ def _copy_clip(source: Path, destination: Path, spec: ClipSpec, *, rate: int, so
     temp = destination.with_name(f".{destination.name}.tmp")
     if temp.exists() or temp.is_symlink():
         raise BlindAnnotationError("temporary clip path already exists")
+    temp_fd: int | None = None
     try:
         with source.open("rb") as input_handle:
             input_handle.seek(source_layout.data_offset + spec.start_frame * frame_bytes)
-            with wave.open(str(temp), "wb") as output:
-                output.setnchannels(1)
-                output.setsampwidth(2)
-                output.setframerate(rate)
-                output.setcomptype("NONE", "not compressed")
-                remaining = spec.end_frame - spec.start_frame
-                while remaining:
-                    block_frames = min(remaining, COPY_CHUNK_FRAMES)
-                    payload = input_handle.read(block_frames * frame_bytes)
-                    if len(payload) != block_frames * frame_bytes:
-                        raise BlindAnnotationError("source snapshot ended before requested clip")
-                    output.writeframesraw(payload)
-                    remaining -= block_frames
+            temp_fd = _open_nofollow(temp, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+            with os.fdopen(temp_fd, "wb") as temp_handle:
+                temp_fd = None
+                with wave.open(temp_handle, "wb") as output:
+                    output.setnchannels(1)
+                    output.setsampwidth(2)
+                    output.setframerate(rate)
+                    output.setcomptype("NONE", "not compressed")
+                    remaining = spec.end_frame - spec.start_frame
+                    while remaining:
+                        block_frames = min(remaining, COPY_CHUNK_FRAMES)
+                        payload = input_handle.read(block_frames * frame_bytes)
+                        if len(payload) != block_frames * frame_bytes:
+                            raise BlindAnnotationError("source snapshot ended before requested clip")
+                        output.writeframesraw(payload)
+                        remaining -= block_frames
         _chmod(temp, 0o600)
         os.replace(temp, destination)
         _chmod(destination, 0o600)
@@ -666,6 +692,9 @@ def _copy_clip(source: Path, destination: Path, spec: ClipSpec, *, rate: int, so
             except OSError:
                 pass
         raise
+    finally:
+        if temp_fd is not None:
+            os.close(temp_fd)
     return _sha256_file(destination)
 
 
@@ -713,6 +742,7 @@ def _fixed_public_evidence(*, manifest_sha: str, annotator_sha: str, template_sh
 
 def build_blind_annotation_pack(source_path: str | os.PathLike[str], output_root: str | os.PathLike[str], *, reference_path: str | os.PathLike[str], system_path: str | os.PathLike[str], seed: int = DEFAULT_SEED, clip_seconds: float = DEFAULT_CLIP_SECONDS, repo_root: str | os.PathLike[str] | None = None, presentation_nonce: str | bytes | None = None) -> BlindPackResult:
     """Build a fresh atomic pack below the canonical private root."""
+    _require_owner_only_permission_support()
     if not math.isfinite(float(clip_seconds)) or clip_seconds <= 0 or clip_seconds > 60:
         raise BlindAnnotationError("clip_seconds must be finite and in (0, 60]")
     source = _regular_file(source_path, "source WAV", max_bytes=MAX_SOURCE_BYTES)
@@ -828,8 +858,11 @@ def _verify_permissions(path: Path, *, directory: bool) -> None:
     if path.is_symlink() or (directory and not path.is_dir()) or (not directory and not path.is_file()):
         raise BlindAnnotationError("pack contains a missing or symlinked artifact")
     expected = 0o700 if directory else 0o600
-    if path.stat().st_mode & 0o777 != expected:
+    stat_result = path.stat()
+    if stat_result.st_mode & 0o777 != expected:
         raise BlindAnnotationError("pack permissions are not owner-only")
+    if hasattr(os, "geteuid") and stat_result.st_uid != os.geteuid():
+        raise BlindAnnotationError("pack owner does not match the current evaluator")
 
 
 def _verify_template(path: Path, rows: Sequence[Mapping[str, Any]]) -> str:
@@ -878,6 +911,7 @@ def _verify_template(path: Path, rows: Sequence[Mapping[str, Any]]) -> str:
 
 def verify_pack(pack_root: str | os.PathLike[str], expected_manifest_sha256: str) -> dict[str, Any]:
     """Strictly verify a sealed pack and return fixed-key public evidence."""
+    _require_owner_only_permission_support()
     root = _reject_dotdot(pack_root, "pack root")
     _reject_existing_symlink_components(root, "pack root")
     if not ((root.name == "blind-annotation" and root.parent.name == ".private")
@@ -1033,6 +1067,7 @@ def verify_pack(pack_root: str | os.PathLike[str], expected_manifest_sha256: str
 
 def public_evidence(manifest_path: str | os.PathLike[str], expected_manifest_sha256: str | None = None) -> dict[str, Any]:
     """Return fixed-key hash/count evidence after strict pack verification."""
+    _require_owner_only_permission_support()
     path = _regular_file(manifest_path, "manifest", max_bytes=MAX_REFERENCE_BYTES)
     return verify_pack(path.parent, expected_manifest_sha256 or _sha256_file(path))
 
