@@ -54,6 +54,7 @@
 - private blind annotation pack v2: 48개/480초 non-overlap, evaluator/annotator 분리, atomic snapshot, strict hash verification
 - additive edit-count STT cascade oracle와 strategy-aware bounded artifact pack; 검증된 isolated runtime 부재로 CT2 executable backend는 미포함
 - 0.5.0 source/wheel candidate: gain v2, BM-RCM, SCD/OSD shadow, blind pack과 falsey boundary iterable 차단 포함
+- turbo Q5 60초 VAD A/B: wall 31.17% 단축, CER/turn-aligned CER 악화로 default-off 유지; OpenVINO는 verified x86 pack 부재로 미실행
 
 ## production 전 아직 필요한 항목
 

@@ -17,6 +17,30 @@ runtime 코드는 모델·wheel을 다운로드하지 않는다. macOS arm64와 
 | evaluation | supported/challenge/unsupported source-time annotations | split leakage audit, male-male/8 kHz/overlap/third-party coverage, handling approval | 실제 1개 녹음 Clova timing proxy와 synthetic harness만 완료; independent set 미완료 |
 | STT/GenOS | internal STT word-time contract 및 GenOS service port | no public network route, auth/retention/idempotency agreement, test endpoint | protocol/stub만 구현 |
 
+## STT OpenVINO 4-arm 추가 반입 묶음
+
+60초 baseline/VAD A/B는 완료했지만 VAD가 품질 gate를 실패했다. 다음 후보인
+OpenVINO encoder와 VAD+OpenVINO arm은 아래 항목을 하나의 Linux x86_64
+candidate pack으로 반입한 뒤에만 실행한다.
+
+- commit `371b5a7561823ab2bb32142d2751e35e7534727b`에서
+  `WHISPER_OPENVINO=ON`, GPU/BLAS/Metal off로 빌드한 `whisper-cli`
+- 동일 commit의 CPU-only binary와 두 build의 normalized CMake config/diff
+- `large-v3-turbo` FP32 source checkpoint hash와 conversion script hash
+- `ggml-large-v3-turbo-encoder-openvino.xml/.bin`의 개별 SHA-256
+- 변환에 사용한 CPython 3.11 wheel lock 전체: OpenVINO, openai-whisper,
+  torch, transformers 및 모든 전이 dependency
+- 실행용 OpenVINO runtime shared-library tree hash, ABI/link report, SBOM,
+  license/notice, no-network 재기동 증거
+- 기존 turbo Q5와 Silero v6.2.0 GGML VAD hash
+- exact 60초 clip hash와 redacted Clova proxy reference hash
+
+OpenVINO external encoder는 `-t 1`만으로 내부 inference thread 1을 보장하지
+않는다. 따라서 실제 Xeon Gold 6230R cgroup-v1 quota `100000/100000`에서
+실행하거나, development host에서 `CPU seconds / wall seconds <= 1.05`를
+통과한 trial만 1-CPU-equivalent로 인정한다. 두 반복의 text/timeline hash가
+다르거나 external encoder load marker가 없으면 해당 arm 전체를 무효 처리한다.
+
 ## 확인한 외부 사실과 해석
 
 - ONNX Runtime 공식 build는 telemetry가 기본 활성화이며, 공식 privacy 문서는 private build에서 `--no_telemetry`를 지원한다고 명시한다. 따라서 production model pack에는 회사 build 또는 동등한 audited vendor artifact가 필요하다. [ORT Privacy](https://raw.githubusercontent.com/microsoft/onnxruntime/v1.29.0/docs/Privacy.md)

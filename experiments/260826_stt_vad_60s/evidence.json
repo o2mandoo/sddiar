@@ -1,0 +1,212 @@
+{
+  "schema_version": "1.0",
+  "kind": "closed-network-whispercpp-vad-60s-development-ab",
+  "recorded_date": "2026-08-26",
+  "production_approved": false,
+  "release_authority": "none",
+  "sddiar_source_commit": "bd388094251d3cde9ad4346ccce0eb36ff562dd5",
+  "input": {
+    "full_audio_sha256": "d78b532160858e235b23d586aaf3fce59365954091adaf8b16537241e52c5ae4",
+    "clip_60s_sha256": "d73fb5971c986c2b3eda081cb22221241f97dc8171eb5739dba14655ec6eb099",
+    "duration_us": 60000000,
+    "frame_count": 960000,
+    "sample_rate_hz": 16000,
+    "channels": 1,
+    "sample_width_bytes": 2,
+    "raw_audio_retained_in_git": false
+  },
+  "reference": {
+    "kind": "clova-note-enterprise-proxy-not-ground-truth",
+    "source_text_sha256": "24462455d235664f2f6cbe25b5e3f407b6c1cc31d22df743524467a448fc29df",
+    "timing_manifest_sha256": "4bf0f648015632a5acd78a861b9093dcf10d4ad473daebc6cc727173ec332904",
+    "complete_turn_count": 5,
+    "evaluation_end_us": 57000000,
+    "truncated_turn_57s_to_61s_excluded": true,
+    "cer_reference_units": 214,
+    "cer_normalized_reference_sha256": "9c53548ee8ca6f7329b3406e2d600211c06dbddd1504fa07abe1f4aac8e6284b",
+    "wer_normalized_reference_sha256": "cd97d6405fe5ee36b1fa2f678bb8d0fa444a647528a41f8351faa505304616be"
+  },
+  "artifacts": {
+    "whisper_cpp_source_commit": "371b5a7561823ab2bb32142d2751e35e7534727b",
+    "whisper_cpp_version": "1.9.3-dev",
+    "cpu_binary_sha256": "ba3cc2dc6558a7021a77547b011f521c927b7e8b2786d6f19382e8c6f3f6e7a1",
+    "turbo_q5_sha256": "394221709cd5ad1f40c46e6031ca61bce88931e6e088c188294c6d5a55ffa7e2",
+    "silero_vad_v6_2_sha256": "2aa269b785eeb53a82983a20501ddf7c1d9c48e33ab63a41391ac6c9f7fb6987",
+    "normalized_cpu_build_config": {
+      "GGML_ACCELERATE": "OFF",
+      "GGML_BLAS": "OFF",
+      "GGML_METAL": "OFF",
+      "GGML_OPENMP": "ON",
+      "GGML_OPENVINO": "OFF",
+      "WHISPER_OPENVINO": "OFF"
+    },
+    "normalized_cpu_build_config_sha256": "2cd8683d37c10c3ad35b45766833af50926a47fdba6d4e4b7dc450c64c4f5b40",
+    "vad_activation_probe_stderr_sha256": "ceee3e2bd7641f0e06532a370ad2f637bca093707c15c98d7b85f11dc1a4f9bc",
+    "vad_activation_observed": {
+      "model_type": "silero-16k",
+      "model_version": "6.2.0",
+      "speech_segment_count": 24,
+      "speech_duration_seconds": 41.87,
+      "audio_sample_reduction_ratio": 0.264
+    }
+  },
+  "protocol": {
+    "schema": "sddiar-stt-vad-ab-protocol/v1",
+    "clip_duration_us": 60000000,
+    "evaluation_end_us": 57000000,
+    "complete_reference_turns": 5,
+    "common": {
+      "threads": 1,
+      "processors": 1,
+      "gpu": false,
+      "language": "ko",
+      "beam_size": 5,
+      "best_of": 5,
+      "temperature": 0.0,
+      "fallback": false,
+      "dtw": "large.v3.turbo",
+      "json_full": true
+    },
+    "vad": {
+      "model": "silero-v6.2.0",
+      "threshold": 0.5,
+      "min_speech_ms": 250,
+      "min_silence_ms": 100,
+      "speech_pad_ms": 30,
+      "sample_overlap_seconds": 0.1
+    },
+    "order": [
+      "V1",
+      "B1",
+      "B2",
+      "V2"
+    ],
+    "repetitions_per_arm": 2,
+    "gates": {
+      "deterministic_repeat": true,
+      "cer_delta_max": 0.01,
+      "turn_aligned_cer_delta_max": 0.01,
+      "wall_reduction_min": 0.1,
+      "median_rtf_max": 1.0,
+      "peak_rss_bytes_max": 2147483648,
+      "cpu_seconds_per_wall_max": 1.05,
+      "inferred_timestamp_ratio_must_not_worsen": true
+    }
+  },
+  "protocol_sha256": "2f77023cc6584ac368869bc448125b0b7b6777de313b735c53bb972c472480aa",
+  "trials": [
+    {
+      "trial": "V1",
+      "arm": "VAD",
+      "wall_seconds": 71.42,
+      "cpu_seconds": 71.3,
+      "cpu_seconds_per_wall": 0.99832,
+      "rtf": 1.190333,
+      "peak_rss_bytes": 889651200,
+      "output_json_sha256": "eb0e68dc8c8ddd1eefe301af511203037d05e84631237c8ec7f254e040d5d6b6"
+    },
+    {
+      "trial": "B1",
+      "arm": "BASELINE",
+      "wall_seconds": 103.2,
+      "cpu_seconds": 102.81,
+      "cpu_seconds_per_wall": 0.996221,
+      "rtf": 1.72,
+      "peak_rss_bytes": 911982592,
+      "output_json_sha256": "92b3b3a8f53f5aa91828f295a734660e67a5ac68e5840dd1da4fe47ff045117f"
+    },
+    {
+      "trial": "B2",
+      "arm": "BASELINE",
+      "wall_seconds": 103.32,
+      "cpu_seconds": 102.99,
+      "cpu_seconds_per_wall": 0.996806,
+      "rtf": 1.722,
+      "peak_rss_bytes": 912867328,
+      "output_json_sha256": "92b3b3a8f53f5aa91828f295a734660e67a5ac68e5840dd1da4fe47ff045117f"
+    },
+    {
+      "trial": "V2",
+      "arm": "VAD",
+      "wall_seconds": 70.72,
+      "cpu_seconds": 70.67,
+      "cpu_seconds_per_wall": 0.999293,
+      "rtf": 1.178667,
+      "peak_rss_bytes": 891568128,
+      "output_json_sha256": "eb0e68dc8c8ddd1eefe301af511203037d05e84631237c8ec7f254e040d5d6b6"
+    }
+  ],
+  "quality": {
+    "baseline": {
+      "cer": 0.154205607,
+      "wer": 0.272727273,
+      "turn_aligned_cer": 0.200934579,
+      "word_count": 65,
+      "exact_turn_containment_rate": 0.953846154,
+      "inferred_timestamp_ratio": 0.015384615,
+      "normalized_hypothesis_sha256": "dda225c6e224f7e42c3c4abcdd9a34afc53be2869b5441df38a424a5bd0b492a",
+      "word_timeline_sha256": "d2ea6c12d7a030d2d093f9b0835e0b6c0d2ed2cffe04c0783ce89097c864d06e"
+    },
+    "vad": {
+      "cer": 0.238317757,
+      "wer": 0.376623377,
+      "turn_aligned_cer": 0.873831776,
+      "word_count": 71,
+      "exact_turn_containment_rate": 0.971830986,
+      "inferred_timestamp_ratio": 0.056338028,
+      "normalized_hypothesis_sha256": "924fe327f011e2a30e816784dc240aa0b5ee38e1b97f87c39b5b170c2ff01cf0",
+      "word_timeline_sha256": "8123a157c94a9a26abba2d82ce736226339e2e2a19a79fac68eea06488214056"
+    }
+  },
+  "aggregate": {
+    "baseline_median_wall_seconds": 103.26,
+    "vad_median_wall_seconds": 71.07,
+    "wall_reduction_ratio": 0.311737362,
+    "baseline_median_rtf": 1.721,
+    "vad_median_rtf": 1.1845,
+    "cer_delta": 0.08411215,
+    "turn_aligned_cer_delta": 0.672897197,
+    "inferred_timestamp_ratio_delta": 0.040953413,
+    "deterministic_repeat_outputs": true,
+    "source_time_bounds_valid": true
+  },
+  "gate_results": {
+    "deterministic_repeat": true,
+    "wall_reduction_gte_10_percent": true,
+    "median_rtf_lte_1": false,
+    "cer_delta_lte_1pp": false,
+    "turn_aligned_cer_delta_lte_1pp": false,
+    "inferred_timestamp_ratio_not_worse": false,
+    "peak_rss_lte_2gib": true,
+    "cpu_seconds_per_wall_lte_1_05": true,
+    "source_time_invariants": true
+  },
+  "requested_arms": {
+    "baseline": "RUN",
+    "vad": "RUN",
+    "openvino_encoder": "NOT_RUN_MISSING_VERIFIED_LINUX_X86_64_BINARY_IR_RUNTIME_PACK",
+    "vad_plus_openvino": "NOT_RUN_MISSING_VERIFIED_LINUX_X86_64_BINARY_IR_RUNTIME_PACK"
+  },
+  "decision": "REJECT_VAD_QUALITY_AND_RTF_KEEP_DEFAULT_OFF",
+  "next_gate": [
+    "build WHISPER_OPENVINO=ON from the same pinned source on Linux x86_64",
+    "seal the FP32 source checkpoint conversion lock and encoder XML/BIN hashes",
+    "seal the OpenVINO runtime tree and normalized CMake configuration",
+    "run under Xeon cgroup-v1 100000/100000 because OpenVINO thread count is not fixed by -t 1",
+    "repeat the balanced two-pass protocol before any 300-second promotion"
+  ],
+  "limitations": [
+    "single Apple M5 Max development host, not Xeon evidence",
+    "single recording and Clova proxy, not independent human ground truth",
+    "Clova has no word-boundary ground truth",
+    "OpenVINO arms were not executable in the available verified artifact set",
+    "VAD output is a rejected challenger and has no production authority"
+  ],
+  "privacy": {
+    "audio": "omitted",
+    "transcript_and_hypotheses": "omitted",
+    "local_paths": "omitted",
+    "raw_stderr": "omitted",
+    "public_evidence": "hashes_counts_rates_and_scalar_runtime_only"
+  }
+}

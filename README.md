@@ -68,6 +68,13 @@ Silicon 위 Linux cgroup-v2 proxy이며 실제 Xeon 6230R/cgroup-v1 증거가
 분리하되 현재 둘 다 production 승인 상태가 아니다. 상세 근거는
 [CPU STT 대체 검토](research/CPU_STT_REPLACEMENT.md)에 있다.
 
+후속 60초 turbo Q5 A/B에서 Silero VAD는 median wall을
+`103.26초 → 71.07초`로 31.17% 줄였지만 Clova proxy CER를
+`15.42% → 23.83%`, turn-aligned CER를 `20.09% → 87.38%`로 악화시켰다.
+두 반복은 arm별 output/timeline hash가 동일했다. 따라서 VAD는 품질·RTF gate
+실패로 default-off를 유지한다. OpenVINO arm은 검증된 Linux x86_64
+binary/IR/runtime pack이 없어 실행 결과를 만들지 않았다.
+
 ## 후속 알고리즘 challenger
 
 고정 threshold 확대나 `UNKNOWN` 강제 채우기 대신 block-conditional conformal
@@ -192,5 +199,6 @@ production release root가 아직 없으므로 production 검증은
 - [SCD/OSD shadow](experiments/260826_scd_osd_shadow/RESULT.md)
 - [blind annotation pack evidence](experiments/260826_blind_annotation/RESULT.md)
 - [gain v2 stability](experiments/260826_gain_v2_stability/RESULT.md)
+- [STT VAD 60초 A/B](experiments/260826_stt_vad_60s/RESULT.md)
 - [artifact intake gate](docs/ARTIFACT_INTAKE_GATE.md)
 - [전체 SDD](SDD_offline_cpu_speaker_diarization_v1_ko.md)

@@ -135,6 +135,20 @@ pack은 명시된 local artifact root 밖을 읽지 않고 파일 수·tree entr
 runtime/model pack과 실제 Xeon cgroup-v1 환경이 들어오기 전에는 5분·10분
 처리시간 또는 기존 GPU large-v3 비열화를 승인하지 않는다.
 
+### 60초 VAD 실제 A/B
+
+정확한 960,000-frame clip에서 baseline과 Silero v6.2.0 VAD를 각각 두 번
+실행했다. 두 arm 모두 CPU seconds/wall이 1.0 이내였고 반복 output hash가
+동일했다. VAD는 speech 41.87초를 선택해 sample을 26.4% 줄였고 median wall을
+`103.26초 → 71.07초`로 단축했다. 그러나 CER는 `15.42% → 23.83%`,
+turn-aligned CER는 `20.09% → 87.38%`, inferred timestamp ratio는
+`1.54% → 5.63%`로 악화됐다. median RTF도 `1.1845`로 1.0을 넘었다.
+
+따라서 VAD는 속도만 통과하고 품질·timestamp·RTF gate를 실패한 challenger로
+동결했다. 상세 hash/count/rate evidence는
+[`experiments/260826_stt_vad_60s/evidence.json`](../experiments/260826_stt_vad_60s/evidence.json)에
+있으며, raw audio·reference·hypothesis·stderr는 포함하지 않는다.
+
 CT2 executable prototype은 검증한 wheel과 child가 실제 import한 설치 코드가
 동일하다는 증거, immutable audio/model snapshot, descendant process termination을
 동시에 만족하지 못해 이번 library source에는 포함하지 않았다. 버전 문자열이나
