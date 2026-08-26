@@ -24,6 +24,12 @@ from sddiar.audio_gain import (  # noqa: E402
     disabled_gain_metadata,
     scale_decoded_chunks,
 )
+from sddiar.bm_rcm_integration import (  # noqa: E402
+    BM_RCM_ALGORITHM_VERSION,
+    BM_RCM_INTEGRATION_VERSION,
+    integrate_bm_rcm,
+    fixed_bm_rcm_config,
+)
 from sddiar.benchmark import peak_rss_bytes  # noqa: E402
 from sddiar.contracts import EmbeddingRegion, EmbeddingResult, SpeechRegion as ContractSpeechRegion  # noqa: E402
 from sddiar.diarization import (  # noqa: E402
@@ -541,6 +547,175 @@ def _graph_rescue_report(
     return report, candidate_spans, graph_result
 
 
+def _bm_rcm_new_rescue_precision(
+    baseline_spans: Sequence[Any], candidate_spans: Sequence[Any],
+    reference: Sequence[Mapping[str, Any]] | None,
+) -> float | None:
+    """Score only newly rescued source-time overlap after label mapping.
+
+    The reference is consulted here strictly for post-hoc scoring.  It never
+    enters block construction, candidate selection, or BM-RCM decisions.
+    """
+
+    if not reference:
+        return None
+    assigned_labels = {"SPEAKER_00", "SPEAKER_01"}
+    reference_speakers = sorted({
+        str(row["speaker"]) for row in reference
+        if str(row["speaker"]) != "UNKNOWN"
+    })
+    matrix: dict[tuple[str, str], int] = {}
+    for span in candidate_spans:
+        if span.speaker_id not in assigned_labels:
+            continue
+        for row in reference:
+            overlap = max(
+                0,
+                min(int(span.end_us), int(row["end_us"]))
+                - max(int(span.start_us), int(row["start_us"])),
+            )
+            matrix[(str(span.speaker_id), str(row["speaker"]))] = (
+                matrix.get((str(span.speaker_id), str(row["speaker"])), 0) + overlap
+            )
+    mappings = (
+        [dict(zip(("SPEAKER_00", "SPEAKER_01"), reference_speakers)),
+         dict(zip(("SPEAKER_00", "SPEAKER_01"), reversed(reference_speakers)))]
+        if len(reference_speakers) >= 2 else [{}]
+    )
+    mapping = max(
+        mappings,
+        key=lambda item: sum(matrix.get((predicted, actual), 0) for predicted, actual in item.items()),
+    )
+    baseline_intervals = tuple(
+        (int(span.start_us), int(span.end_us))
+        for span in baseline_spans
+        if span.speaker_id == "UNKNOWN"
+    )
+    total = 0
+    correct = 0
+    for span in candidate_spans:
+        if span.speaker_id not in assigned_labels:
+            continue
+        for unknown_start, unknown_end in baseline_intervals:
+            rescued_start = max(int(span.start_us), unknown_start)
+            rescued_end = min(int(span.end_us), unknown_end)
+            if rescued_end <= rescued_start:
+                continue
+            for row in reference:
+                overlap = max(
+                    0,
+                    min(rescued_end, int(row["end_us"]))
+                    - max(rescued_start, int(row["start_us"])),
+                )
+                total += overlap
+                if mapping.get(str(span.speaker_id)) == str(row["speaker"]):
+                    correct += overlap
+    return correct / total if total else None
+
+
+def _bm_rcm_policy(diarization_config: DiarizationConfig) -> dict[str, Any]:
+    policy = fixed_bm_rcm_config(diarization_config)
+    return {
+        "integration_version": BM_RCM_INTEGRATION_VERSION,
+        "algorithm_version": BM_RCM_ALGORITHM_VERSION,
+        "epsilon": str(policy.epsilon),
+        "min_quality": str(policy.min_quality),
+        "min_quality_source": "existing_anchor_quality_min",
+        "min_clean_duration_us": policy.min_clean_duration_us,
+        "duration_cap_us": policy.duration_cap_us,
+        "anchor_source": "H2.stable_anchor_ids_and_AnchorEvidence.independent_block_id",
+        "candidate_source": "baseline_UNKNOWN_valid_embedding_contiguous_continuity_run",
+        "candidate_aggregation": "duration_weighted_spherical_embedding",
+        "candidate_quality": "conservative_min_fragment_quality",
+        "application": "SHADOW_SINGLETON_only_UNKNOWN",
+    }
+
+
+def _bm_rcm_report(
+    *,
+    tracklets: Sequence[Any],
+    baseline_trace: Any,
+    embeddings: Sequence[EmbeddingResult],
+    anchor_evidence: Sequence[Any],
+    states: Mapping[str, Any],
+    decision: Any,
+    protected_overlap_spans: Sequence[Any],
+    source_duration_us: int,
+    reference: Sequence[Mapping[str, Any]] | None,
+    score: Any,
+    materialize_config: DiarizationConfig,
+    elapsed_wall_sec: float,
+) -> tuple[dict[str, Any], Any, Any]:
+    """Run BM-RCM arm and materialize only strict singleton rescues."""
+
+    integration = integrate_bm_rcm(
+        tracklets=tracklets,
+        baseline_labels=baseline_trace.labels,
+        embeddings=embeddings,
+        anchor_evidence=anchor_evidence,
+        states=states,
+        decision=decision,
+        diarization_config=materialize_config,
+    )
+    from sddiar.diarization import _materialize  # noqa: PLC0415
+    candidate_spans = _materialize(
+        integration.labels, tracklets, protected_overlap_spans,
+        source_duration_us, materialize_config,
+    )
+    old_assigned = {
+        (int(tracklet.start_us), int(tracklet.end_us), str(old))
+        for tracklet, old in zip(tracklets, baseline_trace.labels)
+        if old in {"SPEAKER_00", "SPEAKER_01", "OVERLAP"}
+    }
+    new_assigned = {
+        (int(tracklet.start_us), int(tracklet.end_us), str(new))
+        for tracklet, old, new in zip(tracklets, baseline_trace.labels, integration.labels)
+        if old in {"SPEAKER_00", "SPEAKER_01", "OVERLAP"}
+    }
+    if old_assigned != new_assigned:
+        raise RuntimeError("BM-RCM violated existing assigned/OVERLAP parity")
+    baseline_metrics = score(baseline_trace.spans, reference) if reference is not None else None
+    candidate_metrics = score(candidate_spans, reference) if reference is not None else None
+    policy = _bm_rcm_policy(materialize_config)
+    policy_sha256 = hashlib.sha256(
+        json.dumps(policy, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("ascii")
+    ).hexdigest()
+    diagnostics = dict(integration.redacted_diagnostics())
+    diagnostics["decision_receipts"] = [dict(item) for item in integration.decision_receipts]
+    report = {
+        "kind": "BM_RCM_EXPERIMENTAL_V2",
+        "experimental": True,
+        "default_enabled": False,
+        "production_approved": False,
+        "quality_status": "REVIEW_REQUIRED",
+        "release_authority": "none",
+        "policy": policy,
+        "policy_sha256": policy_sha256,
+        "candidate_run_count": integration.candidate_run_count,
+        "candidate_count": integration.candidate_count,
+        "rescued_duration_us": integration.rescued_duration_us,
+        "singleton_count": integration.singleton_count,
+        "ood_count": integration.ood_count,
+        "ambiguous_count": integration.ambiguous_count,
+        "fail_closed_count": integration.fail_closed_count,
+        "new_rescue_precision": _bm_rcm_new_rescue_precision(
+            baseline_trace.spans, candidate_spans, reference,
+        ),
+        "baseline_metrics": baseline_metrics,
+        "candidate_metrics": candidate_metrics,
+        "changed_existing_assigned_us": integration.unchanged_existing_assigned_us,
+        "unchanged_overlap_count": integration.unchanged_overlap_count,
+        "elapsed_wall_sec": round(float(elapsed_wall_sec), 6),
+        "peak_rss_mb": round(peak_rss_bytes() / (1024 * 1024), 2),
+        "diagnostics_redacted": diagnostics,
+        "limitations": (
+            "single_recording_clova_timing_proxy_is_not_release_ground_truth",
+            "development_ab_only_release_none",
+        ),
+    }
+    return report, candidate_spans, integration
+
+
 def _run_decoder_calibration(
     *,
     tracklets: Sequence[Any],
@@ -711,6 +886,7 @@ def run_experiment(
     calibrate_decoder: bool = False,
     fast_fp32_baseline_rtf: float | None = None,
     graph_rescue_experimental: bool = False,
+    bm_rcm_experimental: bool = False,
     silero_runtime: Any | None = None,
     embedding_backend: Any | None = None,
 ) -> dict[str, Any]:
@@ -735,6 +911,10 @@ def run_experiment(
         raise ValueError("auto_gain_normalization must be boolean")
     if type(graph_rescue_experimental) is not bool:
         raise ValueError("graph_rescue_experimental must be boolean")
+    if type(bm_rcm_experimental) is not bool:
+        raise ValueError("bm_rcm_experimental must be boolean")
+    if graph_rescue_experimental and bm_rcm_experimental:
+        raise ValueError("graph and BM-RCM experiments are mutually exclusive")
     if max_duration_sec is not None and max_duration_sec <= 0:
         raise ValueError("max_duration_sec must be positive")
     if max_tracklet_sec <= 0:
@@ -1097,6 +1277,47 @@ def run_experiment(
             "emitted_span_timeline_sha256": _span_timeline_sha256(spans),
             "emitted_span_counts": _span_counts(spans),
         })
+    bm_rcm_report = None
+    if bm_rcm_experimental:
+        bm_started = time.perf_counter()
+        # Follow the exact baseline trace currently emitted by the ordinary
+        # pipeline.  The BM arm never consumes reference labels for inputs.
+        current_timeline = _span_timeline_sha256(spans)
+        if decoder_trace is not None and current_timeline == _span_timeline_sha256(decoder_trace.spans):
+            bm_baseline_trace = decoder_trace
+            bm_embeddings = embeddings
+        elif strict_baseline_trace is not None and current_timeline == _span_timeline_sha256(strict_baseline_trace.spans):
+            bm_baseline_trace = strict_baseline_trace
+            bm_embeddings = baseline_embeddings
+        else:
+            bm_baseline_trace = decode_sequence(
+                built.tracklets, built.protected_overlap_spans, states, decision,
+                duration_us, selected_config, baseline_embeddings,
+            )
+            bm_embeddings = baseline_embeddings
+            if current_timeline != _span_timeline_sha256(bm_baseline_trace.spans):
+                raise RuntimeError("BM-RCM baseline trace does not match emitted baseline")
+        bm_rcm_report, candidate_spans, _bm_result = _bm_rcm_report(
+            tracklets=built.tracklets,
+            baseline_trace=bm_baseline_trace,
+            embeddings=bm_embeddings,
+            anchor_evidence=anchors,
+            states=states,
+            decision=decision,
+            protected_overlap_spans=built.protected_overlap_spans,
+            source_duration_us=duration_us,
+            reference=reference,
+            score=score_timed,
+            materialize_config=selected_config,
+            elapsed_wall_sec=_elapsed_wall_seconds(bm_started),
+        )
+        bm_elapsed = _elapsed_wall_seconds(bm_started)
+        bm_rcm_report["elapsed_wall_sec"] = round(bm_elapsed, 6)
+        spans = candidate_spans
+        metrics = bm_rcm_report["candidate_metrics"]
+        stage_timings["bm_rcm_wall_sec"] = bm_elapsed
+        stage_timings["evaluation_scoring_wall_sec"] = evaluation_wall_sec
+        elapsed = _elapsed_wall_seconds(started)
     graph_report = None
     if graph_rescue_experimental:
         graph_started = time.perf_counter()
@@ -1232,6 +1453,9 @@ def run_experiment(
         result["micro_subsegment_experiment"] = micro_subsegment_report
     if graph_report is not None:
         result["graph_rescue_experimental"] = graph_report
+    if bm_rcm_report is not None:
+        result["runtime_config"]["bm_rcm_experimental"] = True
+        result["bm_rcm_experimental"] = bm_rcm_report
     return result
 
 
@@ -1263,6 +1487,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         action="store_true",
         help="opt in to the fixed UNKNOWN-only graph rescue experiment",
     )
+    parser.add_argument(
+        "--bm-rcm-experimental",
+        action="store_true",
+        help="opt in to the fixed BM-RCM v2 UNKNOWN-only A/B experiment",
+    )
     args = parser.parse_args(argv)
     print(json.dumps(run_experiment(
         args.audio, args.silero, args.wespeaker, args.reference,
@@ -1283,6 +1512,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         calibrate_decoder=args.calibrate_decoder,
         fast_fp32_baseline_rtf=args.fast_fp32_baseline_rtf,
         graph_rescue_experimental=args.graph_rescue_experimental,
+        bm_rcm_experimental=args.bm_rcm_experimental,
     ), ensure_ascii=False, sort_keys=True))
     return 0
 
