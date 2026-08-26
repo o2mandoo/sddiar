@@ -222,6 +222,28 @@ class BlindAnnotationTests(unittest.TestCase):
             self.assertFalse(any(item.name.startswith(".late-failure.staging-") for item in target.parent.iterdir()))
             self.assertFalse(any(item.name.startswith(".sddiar-input-") for item in target.parent.iterdir()))
 
+    def test_weakened_permissions_fail_before_final_pack_publication(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            source, reference, system = self._inputs(root)
+            target = self._target(root, "weak-permissions")
+            original = blind_annotation._chmod
+
+            def weaken(path: Path, mode: int) -> None:
+                original(path, 0o755 if mode == 0o700 else 0o644)
+
+            with mock.patch.object(blind_annotation, "_chmod", side_effect=weaken):
+                with self.assertRaisesRegex(BlindAnnotationError, "owner-only"):
+                    build_blind_annotation_pack(
+                        source,
+                        target,
+                        reference_path=reference,
+                        system_path=system,
+                        repo_root=root,
+                    )
+            self.assertFalse(target.exists())
+            self.assertFalse(any(item.name.startswith(".weak-permissions.staging-") for item in target.parent.iterdir()))
+
     def test_permissions_are_owner_only_and_unknown_schema_is_normalized(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)

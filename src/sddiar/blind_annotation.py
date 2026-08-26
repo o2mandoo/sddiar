@@ -16,6 +16,7 @@ descriptor into a private snapshot before they are parsed or decoded.
 """
 from __future__ import annotations
 
+from contextlib import contextmanager
 from dataclasses import dataclass
 import hashlib
 import json
@@ -26,7 +27,7 @@ import random
 import re
 import tempfile
 import wave
-from typing import Any, Iterable, Mapping, Sequence
+from typing import Any, Iterable, Iterator, Mapping, Sequence
 
 from .media import MediaError, WavPcmAccessor
 
@@ -262,36 +263,49 @@ def _write_all(fd: int, payload: bytes) -> None:
         offset += written
 
 
+@contextmanager
+def _owned_fd(fd: int, mode: str) -> Iterator[Any]:
+    """Transfer a raw descriptor to one binary file object exactly once."""
+    try:
+        handle = os.fdopen(fd, mode, buffering=0)
+    except Exception:
+        try:
+            os.close(fd)
+        except OSError:
+            pass
+        raise
+    with handle:
+        yield handle
+
+
 def _snapshot_file(source: Path, destination_dir: Path, *, label: str, max_bytes: int) -> tuple[Path, str]:
     """Copy one opened, no-follow input into a private immutable snapshot."""
     destination = destination_dir / ("input-" + hashlib.sha256((label + ":" + str(source)).encode("utf-8")).hexdigest()[:16] + ".bin")
-    source_fd = _open_nofollow(source, os.O_RDONLY)
-    destination_fd: int | None = None
     digest = hashlib.sha256()
     try:
-        source_stat = os.fstat(source_fd)
-        if not (source_stat.st_mode & 0o170000) == 0o100000:
-            raise BlindAnnotationError(f"{label} is not a regular file")
-        if source_stat.st_size > max_bytes:
-            raise BlindAnnotationError(f"{label} exceeds bounded size limit")
-        destination_fd = _open_nofollow(destination, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-        while True:
-            block = os.read(source_fd, 1 << 20)
-            if not block:
-                break
-            digest.update(block)
-            _write_all(destination_fd, block)
-        os.fsync(destination_fd)
-        if os.fstat(destination_fd).st_size != source_stat.st_size:
-            raise BlindAnnotationError(f"{label} snapshot size changed")
+        with _owned_fd(_open_nofollow(source, os.O_RDONLY), "rb") as source_handle:
+            source_stat = os.fstat(source_handle.fileno())
+            if not (source_stat.st_mode & 0o170000) == 0o100000:
+                raise BlindAnnotationError(f"{label} is not a regular file")
+            if source_stat.st_size > max_bytes:
+                raise BlindAnnotationError(f"{label} exceeds bounded size limit")
+            destination_fd = _open_nofollow(
+                destination, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600
+            )
+            with _owned_fd(destination_fd, "wb") as destination_handle:
+                while True:
+                    block = source_handle.read(1 << 20)
+                    if not block:
+                        break
+                    digest.update(block)
+                    _write_all(destination_handle.fileno(), block)
+                os.fsync(destination_handle.fileno())
+                if os.fstat(destination_handle.fileno()).st_size != source_stat.st_size:
+                    raise BlindAnnotationError(f"{label} snapshot size changed")
     except BlindAnnotationError:
         raise
     except OSError as exc:
         raise BlindAnnotationError(f"failed to snapshot {label}") from exc
-    finally:
-        if destination_fd is not None:
-            os.close(destination_fd)
-        os.close(source_fd)
     _chmod(destination, 0o600)
     return destination, digest.hexdigest()
 
@@ -637,21 +651,18 @@ def _select_specs(source_frames: int, rate: int, reference: Sequence[_TimingEven
 def _write_file(path: Path, payload: bytes) -> str:
     if path.exists() or path.is_symlink():
         raise BlindAnnotationError("refusing to overwrite private output")
-    fd: int | None = None
     try:
-        fd = _open_nofollow(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-        _write_all(fd, payload)
-        os.fsync(fd)
-        os.close(fd)
-        fd = None
+        with _owned_fd(
+            _open_nofollow(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600),
+            "wb",
+        ) as handle:
+            _write_all(handle.fileno(), payload)
+            os.fsync(handle.fileno())
         _chmod(path, 0o600)
     except BlindAnnotationError:
         raise
     except OSError as exc:
         raise BlindAnnotationError("cannot write private output") from exc
-    finally:
-        if fd is not None:
-            os.close(fd)
     return hashlib.sha256(payload).hexdigest()
 
 
@@ -662,13 +673,13 @@ def _copy_clip(source: Path, destination: Path, spec: ClipSpec, *, rate: int, so
     temp = destination.with_name(f".{destination.name}.tmp")
     if temp.exists() or temp.is_symlink():
         raise BlindAnnotationError("temporary clip path already exists")
-    temp_fd: int | None = None
     try:
         with source.open("rb") as input_handle:
             input_handle.seek(source_layout.data_offset + spec.start_frame * frame_bytes)
-            temp_fd = _open_nofollow(temp, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-            with os.fdopen(temp_fd, "wb") as temp_handle:
-                temp_fd = None
+            with _owned_fd(
+                _open_nofollow(temp, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600),
+                "wb",
+            ) as temp_handle:
                 with wave.open(temp_handle, "wb") as output:
                     output.setnchannels(1)
                     output.setsampwidth(2)
@@ -692,9 +703,6 @@ def _copy_clip(source: Path, destination: Path, spec: ClipSpec, *, rate: int, so
             except OSError:
                 pass
         raise
-    finally:
-        if temp_fd is not None:
-            os.close(temp_fd)
     return _sha256_file(destination)
 
 
@@ -822,12 +830,25 @@ def build_blind_annotation_pack(source_path: str | os.PathLike[str], output_root
         manifest_sha = _write_file(manifest_path, _canonical_json(evaluator_manifest) + b"\n")
         _write_file(stage / "manifest.sha256", (manifest_sha + "  manifest.json\n").encode("ascii"))
         _chmod(stage, 0o700)
+        expected_evidence = _fixed_public_evidence(
+            manifest_sha=manifest_sha,
+            annotator_sha=annotator_sha,
+            template_sha=template_sha,
+            selection=selection,
+        )
+        sealed_evidence = verify_pack(stage, manifest_sha)
+        if sealed_evidence != expected_evidence:
+            raise BlindAnnotationError("sealed staging evidence mismatch")
         if final_target.exists() or final_target.is_symlink():
             raise BlindAnnotationError("final output target appeared during build")
         os.replace(stage, final_target)
-        evidence = _fixed_public_evidence(manifest_sha=manifest_sha, annotator_sha=annotator_sha, template_sha=template_sha, selection=selection)
         final_clips = tuple(final_target / "annotator" / "clips" / path.name for path in clip_paths)
-        return BlindPackResult(final_target / "manifest.json", final_target / "annotator" / "label_template.jsonl", final_clips, evidence)
+        return BlindPackResult(
+            final_target / "manifest.json",
+            final_target / "annotator" / "label_template.jsonl",
+            final_clips,
+            sealed_evidence,
+        )
     except Exception:
         _remove_private_tree(stage)
         raise
