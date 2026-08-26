@@ -1,0 +1,103 @@
+{
+  "schema": "sddiar.gain_v2_stability_evidence_v1",
+  "recorded_date": "2026-08-26",
+  "library_source_commit": "a16cead4c9b5c740c78ab32d2bab7bb0eccb1e36",
+  "gain_policy_sha256": "0f9cac01b09df993dec7af523a69f803bd64bfbff44f75650da8725641c271f2",
+  "default_enabled": false,
+  "production_approved": false,
+  "release_authority": "none",
+  "quality_status": "REVIEW_REQUIRED",
+  "variant_order": [
+    "resample_8k_to_16k",
+    "gain_minus12db",
+    "noise_snr20db",
+    "resample_8k_gain_minus12db"
+  ],
+  "baseline": {
+    "hypothesis_change_rate": 0.75,
+    "canonical_attribution_retention_mean": 0.7726004916948497,
+    "speaker_flip_rate_mean": 0.22739950830515032,
+    "speech_iou_mean": 0.7608147117038667,
+    "boundary_f1_mean": 0.7421448759824967
+  },
+  "gain_v2": {
+    "hypothesis_change_rate": 0.25,
+    "canonical_attribution_retention_mean": 0.9024940410078497,
+    "speaker_flip_rate_mean": 0.09750595899215037,
+    "speech_iou_mean": 0.8837869062766557,
+    "boundary_f1_mean": 0.9071824619002998,
+    "co_assigned_agreement_mean": 0.9989130971789931
+  },
+  "per_variant": [
+    {
+      "name": "resample_8k_to_16k",
+      "gain_applied": false,
+      "hypothesis_changed_before": false,
+      "hypothesis_changed_after": false,
+      "retention_before": 0.9336149555103518,
+      "retention_after": 0.9336149555103518,
+      "speaker_flip_before": 0.0663850444896482,
+      "speaker_flip_after": 0.0663850444896482,
+      "speech_iou_after": 0.9045966518140541,
+      "boundary_f1_after": 0.9056797738370599
+    },
+    {
+      "name": "gain_minus12db",
+      "gain_applied": true,
+      "hypothesis_changed_before": true,
+      "hypothesis_changed_after": false,
+      "retention_before": 0.7237086770413448,
+      "retention_after": 0.9872334052988232,
+      "speaker_flip_before": 0.2762913229586552,
+      "speaker_flip_after": 0.012766594701176822,
+      "speech_iou_after": 0.9769495334951127,
+      "boundary_f1_after": 0.9853054911059551
+    },
+    {
+      "name": "noise_snr20db",
+      "gain_applied": false,
+      "hypothesis_changed_before": true,
+      "hypothesis_changed_after": true,
+      "retention_before": 0.7545020029701364,
+      "retention_after": 0.7545020029701364,
+      "speaker_flip_before": 0.2454979970298636,
+      "speaker_flip_after": 0.2454979970298636,
+      "speech_iou_after": 0.7489223672769655,
+      "boundary_f1_after": 0.8315508021390374
+    },
+    {
+      "name": "resample_8k_gain_minus12db",
+      "gain_applied": true,
+      "hypothesis_changed_before": true,
+      "hypothesis_changed_after": false,
+      "retention_before": 0.6785763312575658,
+      "retention_after": 0.9346258002520872,
+      "speaker_flip_before": 0.3214236687424343,
+      "speaker_flip_after": 0.0653741997479128,
+      "speech_iou_after": 0.9046790725204902,
+      "boundary_f1_after": 0.9061937805191468
+    }
+  ],
+  "decision": "ACCEPT_AS_EXPLICIT_OPT_IN_API_KEEP_DEFAULT_OFF",
+  "gates": {
+    "canonical_exact_noop": true,
+    "resample_8k_exact_noop": true,
+    "gain_minus12db_h2_restored": true,
+    "resample_8k_gain_h2_restored": true,
+    "noise_snr20db_h2_restored": false,
+    "source_time_identity": true,
+    "automatic_denoise_router_approved": false
+  },
+  "limitations": [
+    "all_variants_derive_from_one_recording",
+    "consistency_is_not_der_or_ground_truth_accuracy",
+    "noise_snr20db_remains_unresolved",
+    "production_default_requires_independent_false_activation_validation"
+  ],
+  "privacy": {
+    "audio": "omitted",
+    "transcript_text": "omitted",
+    "local_paths": "omitted",
+    "embedding_vectors": "omitted"
+  }
+}
