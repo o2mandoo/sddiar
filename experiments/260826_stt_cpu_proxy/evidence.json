@@ -1,0 +1,186 @@
+{
+  "schema_version": "1.0",
+  "kind": "closed-network-cpu-stt-development-proxy",
+  "recorded_date": "2026-08-26",
+  "production_approved": false,
+  "input": {
+    "duration_seconds": 300.0,
+    "sample_rate_hz": 16000,
+    "channels": 1,
+    "raw_audio_retained": false,
+    "raw_transcript_retained": false,
+    "reference_kind": "clova-note-enterprise-proxy",
+    "reference_turns": 22,
+    "reference_characters": 1113,
+    "reference_whitespace_words": 412,
+    "reference_text_sha256": "6625258c30f052e4e1efac2330718e7988496016e06ec1fcb9004c54ca5a5362"
+  },
+  "metric_policy": {
+    "primary": "NFC punctuation-removed space-stripped CER",
+    "secondary": "NFC punctuation-removed whitespace-token WER",
+    "warning": "Korean whitespace WER is tokenizer-sensitive; CJK models without eojeol spaces are not compared by WER",
+    "reference_tuning": false
+  },
+  "environment": {
+    "host": "Apple M5 Max",
+    "os": "macOS arm64",
+    "cpu_constraint": "single inference thread, not a cgroup quota and not Xeon evidence",
+    "gpu": false,
+    "metal": false,
+    "blas": false,
+    "accelerate": false,
+    "openmp": false
+  },
+  "whisper_cpp": {
+    "source_commit": "371b5a7561823ab2bb32142d2751e35e7534727b",
+    "release": "v1.9.3/b4938",
+    "binary_sha256": "ba3cc2dc6558a7021a77547b011f521c927b7e8b2786d6f19382e8c6f3f6e7a1",
+    "common_runtime": {
+      "threads": 1,
+      "processors": 1,
+      "language": "ko",
+      "gpu_disabled": true,
+      "temperature": 0.0,
+      "output": "full-json-local-only"
+    },
+    "models": {
+      "base-q5_1": {
+        "bytes": 59707625,
+        "sha256": "422f1ae452ade6f30a004d7e5c6a43195e4433bc370bf23fac9cc591f01a8898"
+      },
+      "small-q5_1": {
+        "bytes": 190085487,
+        "sha256": "ae85e4a935d7a567bd102fe55afc16bb595bdb618e11b2fc7591bc08120411bb"
+      },
+      "large-v3-turbo-q5_0": {
+        "bytes": 574041195,
+        "sha256": "394221709cd5ad1f40c46e6031ca61bce88931e6e088c188294c6d5a55ffa7e2"
+      }
+    },
+    "results": [
+      {
+        "lane": "base-q5_1-greedy",
+        "beam_size": 1,
+        "best_of": 1,
+        "wall_seconds": 34.15,
+        "rtf": 0.113833,
+        "max_resident_bytes": 758120448,
+        "cer": 0.482480,
+        "wer": 0.711165,
+        "hypothesis_text_sha256": "891610bc8cab60ce6e5d3dab71ec5562197b78fef46a6579048d15e566b7abbb",
+        "deterministic_repeat_text_match": true,
+        "decision": "REJECT_QUALITY"
+      },
+      {
+        "lane": "base-q5_1-beam5",
+        "beam_size": 5,
+        "best_of": 5,
+        "wall_seconds": 43.76,
+        "rtf": 0.145867,
+        "max_resident_bytes": 809172992,
+        "cer": 0.395328,
+        "wer": 0.597087,
+        "hypothesis_text_sha256": "a75879310678fb73888f3fe08d490c5d07db491efe6d10c6159c61faaaa7bf54",
+        "decision": "REJECT_QUALITY"
+      },
+      {
+        "lane": "small-q5_1-beam5",
+        "beam_size": 5,
+        "best_of": 5,
+        "wall_seconds": 138.91,
+        "rtf": 0.463033,
+        "max_resident_bytes": 1086668800,
+        "cer": 0.265049,
+        "wer": 0.497573,
+        "hypothesis_text_sha256": "0280ffdad88b86826c41040466a0cb5c96c6db7a7bb5285b0934156a656e0a6e",
+        "decision": "REJECT_QUALITY"
+      },
+      {
+        "lane": "large-v3-turbo-q5_0-beam5",
+        "beam_size": 5,
+        "best_of": 5,
+        "wall_seconds": 629.91,
+        "rtf": 2.099700,
+        "max_resident_bytes": 1496596480,
+        "cer": 0.159030,
+        "wer": 0.303398,
+        "hypothesis_text_sha256": "f386ed3c387b91fb6564712f28ff67394f28acbbb564565022188c8d24e0dbf3",
+        "decision": "QUALITY_BASELINE_ONLY_REJECT_SPEED"
+      }
+    ]
+  },
+  "sherpa_onnx": {
+    "version": "1.13.6",
+    "korean_zipformer_archive_sha256": "24bd409318f389cd2de0e295eb1acf91f4e8dfcc0d650490dd2a01f5b50d2c77",
+    "korean_zipformer_components": {
+      "encoder_int8_sha256": "8b196d723421a0513c98ec25da2c43420c029e817f5e4a90b29ff80291c0af2b",
+      "decoder_fp32_sha256": "b486221625f4680659c21eaf0505c50e64a897583af4f9ca6f87dea762a33885",
+      "joiner_int8_sha256": "eb654db1ea2cc9d63474855f65958b6059084692a9f2eb4f3812aceb1e416a20",
+      "tokens_sha256": "016bdf0965029263b7ad01b742366ee542ef0bef38261510e8176ff6f2e9e668"
+    },
+    "sensevoice_archive_sha256": "7d1efa2138a65b0b488df37f8b89e3d91a60676e416f515b952358d83dfd347e",
+    "sensevoice_components": {
+      "model_int8_sha256": "c71f0ce00bec95b07744e116345e33d8cbbe08cef896382cf907bf4b51a2cd51",
+      "tokens_sha256": "f449eb28dc567533d7fa59be34e2abca8784f771850c78a47fb731a31429a1dc",
+      "license_status": "REQUIRES_INTERNAL_MODEL_LICENSE_APPROVAL"
+    },
+    "results": [
+      {
+        "lane": "korean-zipformer-int8-whole-300s",
+        "threads": 1,
+        "decode_seconds": 13.597152,
+        "rtf": 0.045324,
+        "max_resident_bytes": 23135305728,
+        "cer": 0.639712,
+        "wer_status": "INVALID_CJK_SPACING",
+        "hypothesis_text_sha256": "a6082d6d13b0ccc2374e9a5fdf56062456551074d5f02ee38e30520283d2b7b3",
+        "decision": "REJECT_MEMORY_AND_QUALITY"
+      },
+      {
+        "lane": "korean-zipformer-int8-25s-chunks",
+        "threads": 1,
+        "chunks": 12,
+        "decode_seconds": 3.177956,
+        "rtf": 0.010593,
+        "max_resident_bytes": 875151360,
+        "cer": 0.601078,
+        "wer_status": "INVALID_CJK_SPACING",
+        "hypothesis_text_sha256": "49a060b65c633f3b0583df014e528428777a17b684bf6d597822572d5e256c1c",
+        "decision": "REJECT_QUALITY"
+      },
+      {
+        "lane": "sensevoice-int8-ko-25s-chunks",
+        "threads": 1,
+        "chunks": 12,
+        "decode_seconds": 8.134590,
+        "rtf": 0.027115,
+        "max_resident_bytes": 1105887232,
+        "cer": 0.243486,
+        "wer": 0.730583,
+        "wer_status": "NOT_COMPARABLE_TOKEN_SPACING",
+        "hypothesis_text_sha256": "4909ab12f418791076d2cfacd382a55749fdfe9bcc88dbf97a7d9c71b7540f3f",
+        "decision": "FASTEST_PLAUSIBLE_FALLBACK_REJECT_NONINFERIORITY"
+      }
+    ]
+  },
+  "conclusion": {
+    "meets_speed_and_clova_quality_simultaneously": false,
+    "immediate_replacement": "KEEP_EXISTING_STT_AND_ADD_SDDIAR_ATTRIBUTION",
+    "cpu_only_quality_anchor": "WHISPER_CPP_LARGE_V3_TURBO_Q5_0",
+    "cpu_only_fast_fallback": "SENSEVOICE_INT8_UNAPPROVED",
+    "required_next_evidence": [
+      "current_existing_large-v3 output on identical 5-minute prefix",
+      "actual Xeon cgroup-v1 benchmark",
+      "independent Korean holdout",
+      "word start/end timestamp calibration",
+      "model license approval"
+    ]
+  },
+  "privacy": {
+    "audio": "omitted",
+    "transcripts": "omitted",
+    "paths": "omitted",
+    "speaker_names": "omitted",
+    "hypotheses": "hash-only"
+  }
+}
