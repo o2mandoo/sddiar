@@ -14,8 +14,10 @@ from decimal import Decimal, InvalidOperation
 import hashlib
 import json
 import math
+import os
 from pathlib import Path
 import re
+import stat
 from typing import Any, Iterable, Mapping
 
 from .evaluation import (
@@ -403,10 +405,14 @@ def _parse_words_text(text: str, *, expected_recording_id: str,
 def _words_path_is_safe(path: Path) -> bool:
     """Validate a direct loader path without revealing it in errors."""
     try:
-        raw = str(path)
-        if "\\" in raw or any(part == ".." for part in raw.split("/")):
+        if any(part == ".." for part in path.parts):
             return False
-        return (not path.is_symlink() and path.is_file() and path.suffix.lower() == ".jsonl"
+        metadata = os.lstat(path)
+        reparse_flag = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0)
+        file_attributes = int(getattr(metadata, "st_file_attributes", 0))
+        return (not path.is_symlink() and stat.S_ISREG(metadata.st_mode)
+                and not (reparse_flag and file_attributes & reparse_flag)
+                and path.suffix.lower() == ".jsonl"
                 and path.resolve(strict=True).parent == path.parent.resolve(strict=True))
     except OSError:
         return False

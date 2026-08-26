@@ -7,7 +7,6 @@ import hashlib
 import json
 import math
 import os
-import resource
 import sys
 import time
 from dataclasses import replace
@@ -25,6 +24,7 @@ from sddiar.audio_gain import (  # noqa: E402
     disabled_gain_metadata,
     scale_decoded_chunks,
 )
+from sddiar.benchmark import peak_rss_bytes  # noqa: E402
 from sddiar.contracts import EmbeddingRegion, EmbeddingResult, SpeechRegion as ContractSpeechRegion  # noqa: E402
 from sddiar.diarization import (  # noqa: E402
     DiarizationConfig, build_tracklets, decode_sequence, evaluate_hypotheses, finalize_sequence,
@@ -920,8 +920,7 @@ def run_experiment(
             "emitted_span_counts": _span_counts(spans),
         })
     process_cpu_sec = max(0.0, _process_cpu_seconds() - cpu_started)
-    raw_rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-    peak_rss = raw_rss if sys.platform == "darwin" else raw_rss * 1024
+    peak_rss = peak_rss_bytes()
     feature_mode = getattr(embedding_backend, "feature_mode", "injected")
     feature_runtime_version = None
     if feature_mode == "kaldi_native":
@@ -1002,7 +1001,7 @@ def run_experiment(
         "stage_timings": {name: round(value, 6) for name, value in stage_timings.items()},
         "process_cpu_sec": round(process_cpu_sec, 6),
         "cpu_seconds_per_wall_second": round(process_cpu_sec / max(1e-9, elapsed), 6),
-        "peak_rss_mb": round(peak_rss / (1024 * 1024), 2),
+        "peak_rss_mb": round(peak_rss / (1024 * 1024), 2) if peak_rss is not None else None,
         "silero_model_sha256": _sha256(silero_path) if silero_path.is_file() else None,
         "wespeaker_model_sha256": _sha256(wespeaker_path) if wespeaker_path.is_file() else None,
         "audio_gain_normalization": gain_metadata,

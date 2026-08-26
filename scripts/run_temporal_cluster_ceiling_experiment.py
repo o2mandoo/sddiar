@@ -6,7 +6,6 @@ import argparse
 import json
 import math
 import os
-import resource
 import sys
 import time
 from dataclasses import replace
@@ -31,6 +30,7 @@ from run_onnx_diarization_experiment import (  # noqa: E402
     _sha256,
     _span_timeline_sha256,
 )
+from sddiar.benchmark import peak_rss_bytes  # noqa: E402
 from sddiar.contracts import EmbeddingRegion, EmbeddingResult, SpeechRegion as ContractSpeechRegion  # noqa: E402
 from sddiar.diarization import (  # noqa: E402
     DiarizationConfig,
@@ -52,10 +52,9 @@ from sddiar.wespeaker_runtime import WeSpeakerCpuEmbeddingBackend  # noqa: E402
 CEILINGS = (0.30, 0.35, 0.40, 0.45, 0.50, 0.55)
 
 
-def _rss_mb() -> float:
-    raw = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-    value = raw if sys.platform == "darwin" else raw * 1024
-    return round(value / (1024 * 1024), 2)
+def _rss_mb() -> float | None:
+    value = peak_rss_bytes()
+    return round(value / (1024 * 1024), 2) if value is not None else None
 
 
 def _iter_chunks(audio: Path, frame_limit: int):

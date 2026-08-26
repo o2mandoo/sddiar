@@ -1,0 +1,10 @@
+# Hash-bound manifests, locks, source, and workflows must have identical bytes
+# on Windows, macOS, and Linux checkouts.
+* text=auto eol=lf
+
+# No platform-native command scripts are currently tracked. If added later,
+# their line ending must be declared explicitly rather than relying on
+# core.autocrlf.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf

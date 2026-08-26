@@ -12,7 +12,6 @@ import argparse
 import json
 import math
 import os
-import resource
 import sys
 import time
 from dataclasses import dataclass, replace
@@ -34,6 +33,7 @@ from run_onnx_diarization_experiment import (  # noqa: E402
     _sha256,
     _span_timeline_sha256,
 )
+from sddiar.benchmark import peak_rss_bytes  # noqa: E402
 from sddiar.contracts import EmbeddingRegion, EmbeddingResult  # noqa: E402
 from sddiar.diarization import (  # noqa: E402
     DiarizationConfig,
@@ -64,10 +64,9 @@ class RescueSpan:
     attribution_status: str
 
 
-def _rss_mb() -> float:
-    raw = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-    value = raw if sys.platform == "darwin" else raw * 1024
-    return round(value / (1024 * 1024), 2)
+def _rss_mb() -> float | None:
+    value = peak_rss_bytes()
+    return round(value / (1024 * 1024), 2) if value is not None else None
 
 
 def _normalize(values: Sequence[float]) -> tuple[float, ...]:

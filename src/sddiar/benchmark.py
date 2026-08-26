@@ -1,10 +1,14 @@
 """Dependency-free performance measurement helpers; measurements only."""
 from __future__ import annotations
 
-import resource
 import time
 from dataclasses import dataclass
 from typing import Any, Callable, Iterable, Mapping
+
+try:  # POSIX-only diagnostic module; Windows honestly reports unavailable.
+    import resource as _resource
+except ImportError:  # pragma: no cover - exercised on Windows CI
+    _resource = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -27,8 +31,10 @@ class RunMeasurement:
 
 
 def peak_rss_bytes() -> int | None:
+    if _resource is None:
+        return None
     try:
-        raw = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+        raw = _resource.getrusage(_resource.RUSAGE_SELF).ru_maxrss
         # macOS reports bytes; Linux reports KiB.
         return int(raw if __import__('sys').platform == "darwin" else raw * 1024)
     except (AttributeError, OSError):
