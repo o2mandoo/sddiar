@@ -117,7 +117,7 @@ eda81dfe7ad265d2143ea465562bd9ee8d6646f774696e78f504f4e176fe5ea3
 development candidate 증거이며 production 서명 release를 의미하지 않는다.
 
 ```text
-6356c85f00e27905b2f6aa6971b61c5060319983e311ff856d82d043e31aceea
+8755c8ebcabd3623299e4c5fbd15957a1cec71fa5ae91eee9363cb169af3122a
 ```
 
 macOS arm64 fresh venv와 Linux x86_64 emulated clean install을 통과했다.
@@ -167,7 +167,7 @@ PYTHONPATH=src python3.11 scripts/verify_offline_release.py release \
   --production --scan-source src/sddiar
 ```
 
-2026-08-26 기준 CPython 3.11 개발 runtime에서 355개 unittest가 통과했다.
+2026-08-26 기준 CPython 3.11 개발 runtime에서 356개 unittest가 통과했다.
 `src/sddiar`, `scripts`, `bench/one_cpu` static zero-network scan은 issue 0건이다.
 production release root가 아직 없으므로 production 검증은
 `RELEASE_ROOT_MISSING`으로 fail-closed되는 것이 정상이다.

@@ -231,8 +231,12 @@ def _canonical_output_target(
 
 def _open_nofollow(path: Path, flags: int, mode: int = 0o600) -> int:
     nofollow = getattr(os, "O_NOFOLLOW", 0)
+    # Windows CRT descriptors otherwise inherit text mode and may translate
+    # CRLF bytes or stop at control-Z while snapshotting arbitrary WAV/JSON
+    # bytes.  POSIX has no O_BINARY, so the fallback remains a no-op there.
+    binary = getattr(os, "O_BINARY", 0)
     try:
-        return os.open(path, flags | nofollow, mode)
+        return os.open(path, flags | nofollow | binary, mode)
     except OSError as exc:
         raise BlindAnnotationError("input/output path could not be opened safely") from exc
 

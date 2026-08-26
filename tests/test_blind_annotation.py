@@ -9,6 +9,7 @@ import unittest
 from unittest import mock
 import wave
 
+import sddiar.blind_annotation as blind_annotation
 from sddiar.blind_annotation import (
     BlindAnnotationError,
     build_blind_annotation_pack,
@@ -68,6 +69,13 @@ class BlindAnnotationTests(unittest.TestCase):
 
     def _target(self, root: Path, name: str) -> Path:
         return root / ".private" / "blind-annotation" / name
+
+    def test_snapshot_open_forces_binary_mode_when_platform_exposes_it(self) -> None:
+        binary = 0x8000
+        with mock.patch.object(blind_annotation.os, "O_BINARY", binary, create=True):
+            with mock.patch.object(blind_annotation.os, "open", return_value=17) as opened:
+                self.assertEqual(blind_annotation._open_nofollow(Path("audio.wav"), 3), 17)
+        self.assertTrue(opened.call_args.args[1] & binary)
 
     def test_sealed_and_blind_bundles_are_deterministic_and_separate(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
