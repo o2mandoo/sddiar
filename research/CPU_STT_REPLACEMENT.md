@@ -109,3 +109,28 @@ CPU-only STT를 반드시 써야 할 때는 두 profile을 분리한다.
 - 독립 Korean recording/session holdout
 - engine/model/license/SBOM/no-network build 승인
 
+## 0.4.0 이후 시스템 최적화 경로
+
+단독 모델 재시험보다 다음 순서가 우선이다.
+
+1. 동일 turbo Q5의 `baseline / VAD / OpenVINO encoder / VAD+OpenVINO`
+   네 arm을 60초에서 비교하고, 승자만 300초로 확장한다.
+2. Linux x86_64 Xeon에서 CTranslate2 turbo INT8을 1 thread로 직접 비교한다.
+   AVX-512/INT8 지원은 후보 선정 근거일 뿐 속도 승인 근거가 아니다.
+3. fast draft와 full refiner의 구간별 additive edit-error count로 10/20/30/40%
+   duration-budget oracle을 계산한다.
+4. 20% oracle이 full refiner 대비 허용 비열화를 만족할 때만 실제 router를
+   구현한다. oracle도 실패하면 cascade 개발을 중단한다.
+
+`sddiar.stt_cascade_experimental`은 3번을 위한 default-off 하네스다. 임의의
+구간 CER/WER rate나 문자열 길이 차는 합산하지 않는다. 동일 종류의 character
+또는 word edit count와 전체 reference unit count만 허용하며, 결과는 항상
+`REVIEW_REQUIRED / release_authority=none`이다.
+
+VAD/OpenVINO와 CTranslate2 artifact는 전략별 다중 파일 pack으로 해시를 묶는다.
+pack은 명시된 local artifact root 밖을 읽지 않고 파일 수·tree entry·총 byte를
+제한한다. 이 계약은 runtime 승인 기능이 아니라 폐쇄망 A/B 재현성 경계다.
+
+현재 저장소에는 OpenVINO/CT2 실제 모델 실행 결과가 없다. 필요한 native
+runtime/model pack과 실제 Xeon cgroup-v1 환경이 들어오기 전에는 5분·10분
+처리시간 또는 기존 GPU large-v3 비열화를 승인하지 않는다.
