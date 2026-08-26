@@ -1,0 +1,49 @@
+{
+  "schema_version": "1.0",
+  "pack_id": "development-macos-x86_64-cp311-20260826",
+  "pack_version": "0.3.0-dev1",
+  "production_approved": false,
+  "target": "macos-x86_64-cp311",
+  "installable": false,
+  "purpose": "Availability record for macOS Intel development; this pack deliberately does not substitute an older ONNX Runtime or kaldi-native-fbank wheel",
+  "required_runtime": {
+    "onnxruntime": {
+      "version": "1.29.0",
+      "status": "missing_official_wheel",
+      "resolver": "pip download --only-binary=:all: --no-deps --platform macosx_10_9_x86_64 --python-version 3.11 --abi cp311",
+      "result": "No matching distribution found for onnxruntime==1.29.0"
+    },
+    "kaldi-native-fbank": {
+      "version": "1.22.3",
+      "status": "missing_official_wheel",
+      "resolver": "pip download --only-binary=:all: --no-deps --platform macosx_10_9_x86_64 --python-version 3.11 --abi cp311",
+      "result": "No matching distribution found for kaldi-native-fbank==1.22.3; resolver listed versions through 1.21.3"
+    }
+  },
+  "resolution": {
+    "source": "PyPI",
+    "python": "3.11",
+    "implementation": "cp",
+    "abi": "cp311",
+    "platform": "macosx_10_9_x86_64",
+    "resolved_at": "2026-08-26"
+  },
+  "available_components_lock": {
+    "path": "available-components.lock",
+    "sha256": "cc3c165d02ecf5f55c8d655ae12975815c6712880dcb9fbabfddcff6a2d84b2f",
+    "scope": "available_components_only",
+    "complete_runtime_lock": false
+  },
+  "available_wheels": [
+    {"path": "wheels/flatbuffers-25.12.19-py2.py3-none-any.whl", "sha256": "7634f50c427838bb021c2d66a3d1168e9d199b0607e6329399f04846d42e20b4"},
+    {"path": "wheels/numpy-2.4.6-cp311-cp311-macosx_10_9_x86_64.whl", "sha256": "0280e0356c0829a18d9de1cb7eee50ec22ca639878d7240307ca0943d73cd2c4"},
+    {"path": "wheels/packaging-26.3-py3-none-any.whl", "sha256": "d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c"},
+    {"path": "wheels/protobuf-7.36.0-cp310-abi3-macosx_10_9_universal2.whl", "sha256": "9103532dffd80c6fab7e50c65a31007680a06eb57537d437bb1b35812c138a37"},
+    {"path": "wheels/sddiar-0.3.0-py3-none-any.whl", "sha256": "695e332892fdc16225a924cabde56e58d9de2906bfa95eed2db29f5207fdd631"}
+  ],
+  "production_blockers": [
+    "official onnxruntime 1.29.0 macOS x86_64 wheel is unavailable",
+    "kaldi-native-fbank 1.22.3 macOS x86_64 wheel is unavailable",
+    "target-native no-telemetry ONNX Runtime source build and attestation are required"
+  ]
+}

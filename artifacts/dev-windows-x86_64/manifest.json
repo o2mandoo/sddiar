@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.0",
+  "pack_id": "development-windows-x86_64-cp311-20260826",
+  "pack_version": "0.3.0-dev1",
+  "production_approved": false,
+  "target": "windows-x86_64-cp311",
+  "purpose": "Development-only wheel ingress for a Windows x64 CPython 3.11 host; the PyPI ONNX Runtime wheel is not evidence of a no-telemetry production build",
+  "offline_lock": {
+    "path": "requirements.lock",
+    "sha256": "30890c1b56ff29732ae8c868e52fa8c8a65e2d46d2033d7e990a229ed6b080f0"
+  },
+  "runtime_policy": {
+    "execution_provider": "CPUExecutionProvider",
+    "cpu_quota_equivalent": 1.0,
+    "ort_intra_op_threads": 1,
+    "ort_inter_op_threads": 1,
+    "production_requires_no_telemetry_build": true,
+    "actual_target_preflight_required": true
+  },
+  "resolution": {
+    "source": "PyPI",
+    "resolver": "pip download --only-binary=:all: --no-deps",
+    "python": "3.11",
+    "implementation": "cp",
+    "abi": "cp311",
+    "platform": "win_amd64",
+    "resolved_at": "2026-08-26"
+  },
+  "wheels": [
+    {"path": "wheels/flatbuffers-25.12.19-py2.py3-none-any.whl", "sha256": "7634f50c427838bb021c2d66a3d1168e9d199b0607e6329399f04846d42e20b4"},
+    {"path": "wheels/kaldi_native_fbank-1.22.3-cp311-cp311-win_amd64.whl", "sha256": "bd225d0624d45b533c1780094b3c59666276a6e9f20222943441212cdf301c9e"},
+    {"path": "wheels/numpy-2.4.6-cp311-cp311-win_amd64.whl", "sha256": "1e254a00cdf42b1e4d5b3d68d33af63268d41340d8885df2ab6470f2e1500147"},
+    {"path": "wheels/onnxruntime-1.29.0-cp311-cp311-win_amd64.whl", "sha256": "0d4f427afac434b0070fe992b540ddf20a7aff2265f760f314d91331935b6b98"},
+    {"path": "wheels/packaging-26.3-py3-none-any.whl", "sha256": "d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c"},
+    {"path": "wheels/protobuf-7.36.0-cp310-abi3-win_amd64.whl", "sha256": "1781cc1de61249b750848029bca452c0a8b7e990080316b9bbc2518b2117b488"},
+    {"path": "wheels/sddiar-0.3.0-py3-none-any.whl", "sha256": "695e332892fdc16225a924cabde56e58d9de2906bfa95eed2db29f5207fdd631"}
+  ]
+}

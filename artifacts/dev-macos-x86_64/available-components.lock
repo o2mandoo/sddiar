@@ -1,0 +1,13 @@
+# Available macOS Intel / CPython 3.11 components only.
+# This is intentionally not a complete sddiar runtime lock: ORT 1.29.0 and
+# kaldi-native-fbank 1.22.3 have no matching official wheels for this target.
+flatbuffers==25.12.19 \
+    --hash=sha256:7634f50c427838bb021c2d66a3d1168e9d199b0607e6329399f04846d42e20b4
+numpy==2.4.6 \
+    --hash=sha256:0280e0356c0829a18d9de1cb7eee50ec22ca639878d7240307ca0943d73cd2c4
+packaging==26.3 \
+    --hash=sha256:d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c
+protobuf==7.36.0 \
+    --hash=sha256:9103532dffd80c6fab7e50c65a31007680a06eb57537d437bb1b35812c138a37
+sddiar==0.3.0 \
+    --hash=sha256:695e332892fdc16225a924cabde56e58d9de2906bfa95eed2db29f5207fdd631

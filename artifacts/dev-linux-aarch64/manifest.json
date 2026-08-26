@@ -1,0 +1,36 @@
+{
+  "schema_version": "1.0",
+  "pack_id": "development-linux-arm64-cpu1-20260826",
+  "pack_version": "0.3.0-dev1",
+  "production_approved": false,
+  "target": "linux-arm64-cp311",
+  "purpose": "Local Docker 1.00 CPU-equivalent quota proxy; not the Intel Xeon release target",
+  "offline_lock": {
+    "path": "requirements.lock",
+    "sha256": "12b7b97ade04672a493b83ab519166c6fb3b198b091d82ada5cdd5598e8c078c"
+  },
+  "container_image": {
+    "tag": "sddiar-onecpu:0.3.0",
+    "local_digest": "sha256:65eec8d792bd05d0039c69908bfb301d990cf955bbca62184d25fb4162e2569e",
+    "base": "python@sha256:d29f48a31a8b408ed19272ca1e7b10ebae13b240a27e862d3d4217c528e2e0c3",
+    "build_network": "none"
+  },
+  "runtime_policy": {
+    "network": "none",
+    "execution_provider": "CPUExecutionProvider",
+    "cpu_quota_equivalent": 1.0,
+    "omp_threads": 1,
+    "ort_intra_op_threads": 1,
+    "ort_inter_op_threads": 1,
+    "production_requires_no_telemetry_build": true
+  },
+  "wheels": [
+    {"path": "wheels/flatbuffers-25.12.19-py2.py3-none-any.whl", "sha256": "7634f50c427838bb021c2d66a3d1168e9d199b0607e6329399f04846d42e20b4"},
+    {"path": "wheels/kaldi_native_fbank-1.22.3-cp311-cp311-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", "sha256": "d48e5dd8e897bf4509be2c6eeb4bbab728eaaef1f214ae0510c96219c4253d17"},
+    {"path": "wheels/numpy-2.4.6-cp311-cp311-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", "sha256": "0ab0a9c4ffb1a6d95ef519fe4247dba8eb6b18ad93999f76b7f657039acabd47"},
+    {"path": "wheels/onnxruntime-1.29.0-cp311-cp311-manylinux_2_28_aarch64.whl", "sha256": "16925ef8497e2c07e4b5ae15b504079b3ab3f65e22c58efd10dde0f3caea969a"},
+    {"path": "wheels/packaging-26.3-py3-none-any.whl", "sha256": "d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c"},
+    {"path": "wheels/protobuf-7.36.0-cp310-abi3-manylinux2014_aarch64.whl", "sha256": "bf94a5917c71058262de683669bc0a797a7669d3de71f0b36d058e3194f47b44"},
+    {"path": "wheels/sddiar-0.3.0-py3-none-any.whl", "sha256": "695e332892fdc16225a924cabde56e58d9de2906bfa95eed2db29f5207fdd631"}
+  ]
+}

@@ -1,0 +1,134 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-08-26T00:00:00Z",
+    "component": {
+      "type": "application",
+      "name": "sddiar",
+      "version": "0.3.0",
+      "purl": "pkg:pypi/sddiar@0.3.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "695e332892fdc16225a924cabde56e58d9de2906bfa95eed2db29f5207fdd631"
+        }
+      ],
+      "properties": [
+        {
+          "name": "sddiar:approval",
+          "value": "DEVELOPMENT_ONLY"
+        },
+        {
+          "name": "sddiar:target",
+          "value": "macos-arm64-cp311"
+        }
+      ]
+    }
+  },
+  "components": [
+    {
+      "type": "library",
+      "name": "onnxruntime",
+      "version": "1.29.0",
+      "purl": "pkg:pypi/onnxruntime@1.29.0",
+      "hashes": [{"alg": "SHA-256", "content": "07c5907474dec4a2792fd7626b753dc66707808385a6d9eecf993db0066a9d0f"}],
+      "licenses": [{"license": {"id": "MIT"}}],
+      "properties": [{"name": "sddiar:production-no-telemetry-approved", "value": "false"}]
+    },
+    {
+      "type": "library",
+      "name": "numpy",
+      "version": "2.4.6",
+      "purl": "pkg:pypi/numpy@2.4.6",
+      "hashes": [{"alg": "SHA-256", "content": "4cfe66903cc32a9921a6733d96b19bb6abf310397581bbad89c228f5abaf0ee8"}],
+      "licenses": [{"expression": "BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0"}]
+    },
+    {
+      "type": "library",
+      "name": "protobuf",
+      "version": "7.36.0",
+      "purl": "pkg:pypi/protobuf@7.36.0",
+      "hashes": [{"alg": "SHA-256", "content": "9103532dffd80c6fab7e50c65a31007680a06eb57537d437bb1b35812c138a37"}],
+      "licenses": [{"license": {"id": "BSD-3-Clause"}}]
+    },
+    {
+      "type": "library",
+      "name": "flatbuffers",
+      "version": "25.12.19",
+      "purl": "pkg:pypi/flatbuffers@25.12.19",
+      "hashes": [{"alg": "SHA-256", "content": "7634f50c427838bb021c2d66a3d1168e9d199b0607e6329399f04846d42e20b4"}],
+      "licenses": [{"license": {"id": "Apache-2.0"}}]
+    },
+    {
+      "type": "library",
+      "name": "packaging",
+      "version": "26.3",
+      "purl": "pkg:pypi/packaging@26.3",
+      "hashes": [{"alg": "SHA-256", "content": "d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c"}],
+      "licenses": [{"expression": "Apache-2.0 OR BSD-2-Clause"}]
+    },
+    {
+      "type": "library",
+      "name": "kaldi-native-fbank",
+      "version": "1.22.3",
+      "purl": "pkg:pypi/kaldi-native-fbank@1.22.3",
+      "hashes": [{"alg": "SHA-256", "content": "29452f2900e771086e9022dde17a92d191217ab3e34ca7dc361bd9be53e94fb4"}],
+      "licenses": [{"license": {"id": "Apache-2.0"}}]
+    },
+    {
+      "type": "machine-learning-model",
+      "name": "silero-vad-development-candidate",
+      "hashes": [{"alg": "SHA-256", "content": "1a153a22f4509e292a94e67d6f9b85e8deb25b4988682b7e174c65279d8788e3"}],
+      "licenses": [{"license": {"name": "REQUIRES_INTERNAL_WEIGHT_APPROVAL"}}]
+    },
+    {
+      "type": "machine-learning-model",
+      "name": "wespeaker-voxceleb-resnet34-development-candidate",
+      "hashes": [{"alg": "SHA-256", "content": "9fea6516d7ad6bf0a76c7689f5a49b65d330fad6dde96c91bb4435ffbfe056a1"}],
+      "licenses": [{"license": {"id": "CC-BY-4.0"}}],
+      "properties": [{"name": "sddiar:internal-weight-approval", "value": "pending"}]
+    },
+    {
+      "type": "machine-learning-model",
+      "name": "wespeaker-voxceleb-campplus-development-challenger",
+      "hashes": [{"alg": "SHA-256", "content": "b50810498b5bcf5773d086f6993d344476bd0c88b566a41e8d801aaf8461efad"}],
+      "licenses": [{"license": {"id": "CC-BY-4.0"}}],
+      "properties": [
+        {"name": "sddiar:selection", "value": "rejected-as-standalone-by-worst-speaker-calibration"},
+        {"name": "sddiar:internal-weight-approval", "value": "pending"}
+      ]
+    },
+    {
+      "type": "machine-learning-model",
+      "name": "wespeaker-resnet34-static-int8-q1-rejected",
+      "hashes": [{"alg": "SHA-256", "content": "396e15545315903245445aa5d4e9338fc262aa182f2e134b3b73bef37e40823f"}],
+      "properties": [{"name": "sddiar:runtime-eligible", "value": "false"}]
+    },
+    {
+      "type": "machine-learning-model",
+      "name": "wespeaker-resnet34-mixed-int8-q1b-rejected",
+      "hashes": [{"alg": "SHA-256", "content": "4632ef5eb528d42e0de13922944d2a609601b23f9cd5d6734a41667a5f35e09b"}],
+      "properties": [{"name": "sddiar:runtime-eligible", "value": "false"}]
+    },
+    {
+      "type": "machine-learning-model",
+      "name": "pyannote-segmentation3-fp32-evidence-candidate",
+      "hashes": [{"alg": "SHA-256", "content": "220ad67ca923bef2fa91f2390c786097bf305bceb5e261d4af67b38e938e1079"}],
+      "licenses": [{"license": {"id": "MIT"}}],
+      "properties": [
+        {"name": "sddiar:default-runtime", "value": "false"},
+        {"name": "sddiar:approved-for-tracklet-split", "value": "false"},
+        {"name": "sddiar:annotated-calibration-required", "value": "true"}
+      ]
+    },
+    {
+      "type": "machine-learning-model",
+      "name": "pyannote-segmentation3-dynamic-int8-rejected",
+      "hashes": [{"alg": "SHA-256", "content": "d582f4b4c6b48205de7e0643c57df0df5615a3c176189be3fc461e9d18827b5d"}],
+      "licenses": [{"license": {"id": "MIT"}}],
+      "properties": [{"name": "sddiar:runtime-eligible", "value": "false"}]
+    }
+  ]
+}

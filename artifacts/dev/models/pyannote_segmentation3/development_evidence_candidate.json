@@ -1,0 +1,240 @@
+{
+  "approved_audio_sha256": "d78b532160858e235b23d586aaf3fce59365954091adaf8b16537241e52c5ae4",
+  "candidate_conditions": [
+    "FP32 eligibility is limited to later annotated SCD/OSD calibration.",
+    "Model access terms, MIT notice preservation, weight provenance, and internal redistribution approval remain mandatory.",
+    "Default-pipeline runtime, tracklet splitting, and overlap assignment remain prohibited."
+  ],
+  "candidate_id": "pyannote-segmentation3-fp32-development-evidence-20260826",
+  "comparisons": [
+    {
+      "checks": {
+        "argmax_agreement": false,
+        "change_abs_error_p95": true,
+        "change_mae": true,
+        "diagnostic_event_f1": false,
+        "overlap_abs_error_p95": false,
+        "overlap_mae": false,
+        "speech_abs_error_p95": false,
+        "speech_mae": false
+      },
+      "cpu_cost": {
+        "fp32": {
+          "elapsed_wall_sec": 1.019307,
+          "model_inference_wall_sec": 0.94497,
+          "peak_rss_mb": 102.55
+        },
+        "int8": {
+          "elapsed_wall_sec": 1.380065,
+          "model_inference_wall_sec": 1.300733,
+          "peak_rss_mb": 93.64
+        }
+      },
+      "metrics": {
+        "argmax_agreement": 0.6687972302673192,
+        "argmax_count": 30039,
+        "change_abs_error_max": 0.28795089758199477,
+        "change_abs_error_p95": 0.0,
+        "change_mae": 0.0005504941072754538,
+        "diagnostic_events": {
+          "candidate_event_count": 0,
+          "collar_us": 250000,
+          "f1": 0.0,
+          "matched_event_count": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "reference_event_count": 1,
+          "time_abs_error_p95_us": null
+        },
+        "frame_count": 3552,
+        "overlap_abs_error_max": 0.4348012019215084,
+        "overlap_abs_error_p95": 0.257333676571429,
+        "overlap_mae": 0.051651474054958915,
+        "speech_abs_error_max": 0.7394136415825887,
+        "speech_abs_error_p95": 0.6768875792097266,
+        "speech_mae": 0.2022858814532117
+      },
+      "passed": false,
+      "segment_end_us": 60000000,
+      "segment_start_us": 0
+    },
+    {
+      "checks": {
+        "argmax_agreement": false,
+        "change_abs_error_p95": true,
+        "change_mae": true,
+        "diagnostic_event_f1": false,
+        "overlap_abs_error_p95": false,
+        "overlap_mae": false,
+        "speech_abs_error_p95": false,
+        "speech_mae": false
+      },
+      "cpu_cost": {
+        "fp32": {
+          "elapsed_wall_sec": 5.69378,
+          "model_inference_wall_sec": 5.442872,
+          "peak_rss_mb": 114.61
+        },
+        "int8": {
+          "elapsed_wall_sec": 7.59142,
+          "model_inference_wall_sec": 7.34552,
+          "peak_rss_mb": 104.41
+        }
+      },
+      "metrics": {
+        "argmax_agreement": 0.7446192801591608,
+        "argmax_count": 171399,
+        "change_abs_error_max": 0.24081552285891994,
+        "change_abs_error_p95": 0.0,
+        "change_mae": 0.0002499184542807888,
+        "diagnostic_events": {
+          "candidate_event_count": 0,
+          "collar_us": 250000,
+          "f1": 0.0,
+          "matched_event_count": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "reference_event_count": 2,
+          "time_abs_error_p95_us": null
+        },
+        "frame_count": 17774,
+        "overlap_abs_error_max": 0.7196259806445415,
+        "overlap_abs_error_p95": 0.2408635832938104,
+        "overlap_mae": 0.04536427757192383,
+        "speech_abs_error_max": 0.9612254572553762,
+        "speech_abs_error_p95": 0.6254686000225629,
+        "speech_mae": 0.14659470653111312
+      },
+      "passed": false,
+      "segment_end_us": 300000000,
+      "segment_start_us": 0
+    }
+  ],
+  "cpu_cost": {
+    "execution_provider": "CPUExecutionProvider",
+    "fp32": {
+      "peak_rss_mb": 114.61,
+      "total_elapsed_wall_sec": 6.713087,
+      "total_model_inference_wall_sec": 6.387842
+    },
+    "int8": {
+      "inference_wall_ratio_vs_fp32": 1.35354835013139,
+      "peak_rss_mb": 104.41,
+      "total_elapsed_wall_sec": 8.971485000000001,
+      "total_model_inference_wall_sec": 8.646253
+    },
+    "runtime_network_imports": "none; project static zero-network scan required",
+    "threads": 1
+  },
+  "eligible_for_later_annotated_scd_osd_calibration": true,
+  "evidence_contract": {
+    "approved_for_overlap_assignment": false,
+    "approved_for_tracklet_split": false,
+    "calibration_status": "UNCALIBRATED",
+    "edge_padding": "right-zero-pad one bounded tail window; padded-only frames excluded",
+    "local_speaker_permutation_aligned": true,
+    "local_speakers": 3,
+    "max_active_speakers": 2,
+    "outputs": [
+      "speech_probability",
+      "overlap_probability",
+      "speaker_change_evidence"
+    ],
+    "powerset_classes": 7,
+    "receptive_field_samples": 991,
+    "receptive_field_shift_samples": 270,
+    "sample_rate_hz": 16000,
+    "window_samples": 160000,
+    "window_shift_samples": 16000
+  },
+  "gates": {
+    "argmax_agreement_min": 0.99,
+    "change_abs_error_p95_max": 0.08,
+    "change_mae_max": 0.02,
+    "diagnostic_event_collar_us": 250000,
+    "diagnostic_event_f1_min": 0.9,
+    "overlap_abs_error_p95_max": 0.03,
+    "overlap_mae_max": 0.01,
+    "speech_abs_error_p95_max": 0.03,
+    "speech_mae_max": 0.01
+  },
+  "limits": [
+    "This is model parity on one approved recording, not annotated SCD/OSD accuracy.",
+    "No PyTorch-versus-ONNX parity claim was made or tested.",
+    "Diagnostic event agreement uses uncalibrated evidence local maxima and cannot justify tracklet cuts.",
+    "A fresh file-level Korean annotated calibration/holdout split is required before any SCD/OSD use.",
+    "Intel Xeon Gold 6230R cgroup-v1 performance remains unverified."
+  ],
+  "model_metadata": {
+    "fp32": {
+      "license": "https://huggingface.co/pyannote/segmentation-3.0/blob/main/LICENSE",
+      "maintainer": "k2-fsa",
+      "model_author": "pyannote",
+      "model_type": "pyannote-segmentation-3.0",
+      "num_classes": "7",
+      "num_speakers": "3",
+      "onnx.quant.pre_process": "onnxruntime.quant",
+      "powerset_max_classes": "2",
+      "receptive_field_shift": "270",
+      "receptive_field_size": "991",
+      "sample_rate": "16000",
+      "url_1": "https://huggingface.co/pyannote/segmentation-3.0",
+      "url_2": "https://huggingface.co/csukuangfj/pyannote-models/tree/main/segmentation-3.0",
+      "version": "1",
+      "window_size": "160000"
+    },
+    "int8": {
+      "license": "https://huggingface.co/pyannote/segmentation-3.0/blob/main/LICENSE",
+      "maintainer": "k2-fsa",
+      "model_author": "pyannote",
+      "model_type": "pyannote-segmentation-3.0",
+      "num_classes": "7",
+      "num_speakers": "3",
+      "onnx.infer": "onnxruntime.quant",
+      "powerset_max_classes": "2",
+      "receptive_field_shift": "270",
+      "receptive_field_size": "991",
+      "sample_rate": "16000",
+      "url_1": "https://huggingface.co/pyannote/segmentation-3.0",
+      "url_2": "https://huggingface.co/csukuangfj/pyannote-models/tree/main/segmentation-3.0",
+      "version": "1",
+      "window_size": "160000"
+    }
+  },
+  "parity_passed": false,
+  "production_approved": false,
+  "provenance": {
+    "bundle_relative_path": "models/pyannote_segmentation3",
+    "conversion_maintainer": "k2-fsa/sherpa-onnx",
+    "export_script_sha256": "21df426fc6ca2ad54b5c9e114729990e0a669d602ea4e052f38287f99d32c0b0",
+    "fp32_bytes": 5992913,
+    "fp32_sha256": "220ad67ca923bef2fa91f2390c786097bf305bceb5e261d4af67b38e938e1079",
+    "int8_bytes": 1540506,
+    "int8_conversion": "onnxruntime.quantization.quantize_dynamic weight_type=QUInt8",
+    "int8_sha256": "d582f4b4c6b48205de7e0643c57df0df5615a3c176189be3fc461e9d18827b5d",
+    "license": "MIT",
+    "license_path": "models/pyannote_segmentation3/LICENSE",
+    "license_sha256": "14d7016ad68e7394d6e6b78d96cc2ae431c905287b89674cfdf021e79e62b8ba",
+    "readme_sha256": "0380ed76a50efcc421dc62f251ed06e8349688466beac3177bee6e00dc336bfc",
+    "source": "https://huggingface.co/pyannote/segmentation-3.0"
+  },
+  "runtime_eligible_for_default_pipeline": false,
+  "schema": "sddiar_pyannote_segmentation_parity_v1",
+  "segments": [
+    {
+      "duration_sec": 60.0,
+      "end_us": 60000000,
+      "start_us": 0
+    },
+    {
+      "duration_sec": 300.0,
+      "end_us": 300000000,
+      "start_us": 0
+    }
+  ],
+  "selected_artifact": "fp32",
+  "selection_policy": "select INT8 only when all quality parity gates pass and isolated model inference is no slower; otherwise retain FP32 as the reference evidence candidate and reject INT8",
+  "source_path": "omitted",
+  "speaker_labels_used": false,
+  "status": "FP32_EVIDENCE_CANDIDATE_INT8_REJECTED"
+}

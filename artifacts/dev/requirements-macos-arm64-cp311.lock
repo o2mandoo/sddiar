@@ -1,0 +1,19 @@
+# Development-only offline runtime lock for macOS arm64 / CPython 3.11.
+# Install only from the adjacent wheelhouse:
+#   python3.11 -m pip install --no-index --find-links wheels --require-hashes -r requirements-macos-arm64-cp311.lock
+# The pinned official ORT wheel is not production-approved; see manifest.json.
+
+flatbuffers==25.12.19 \
+    --hash=sha256:7634f50c427838bb021c2d66a3d1168e9d199b0607e6329399f04846d42e20b4
+kaldi-native-fbank==1.22.3 \
+    --hash=sha256:29452f2900e771086e9022dde17a92d191217ab3e34ca7dc361bd9be53e94fb4
+numpy==2.4.6 \
+    --hash=sha256:4cfe66903cc32a9921a6733d96b19bb6abf310397581bbad89c228f5abaf0ee8
+onnxruntime==1.29.0 \
+    --hash=sha256:07c5907474dec4a2792fd7626b753dc66707808385a6d9eecf993db0066a9d0f
+packaging==26.3 \
+    --hash=sha256:d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c
+protobuf==7.36.0 \
+    --hash=sha256:9103532dffd80c6fab7e50c65a31007680a06eb57537d437bb1b35812c138a37
+sddiar==0.3.0 \
+    --hash=sha256:695e332892fdc16225a924cabde56e58d9de2906bfa95eed2db29f5207fdd631

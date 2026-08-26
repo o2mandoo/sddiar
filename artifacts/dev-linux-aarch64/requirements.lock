@@ -1,0 +1,15 @@
+# Development-only Linux arm64 / CPython 3.11 offline runtime lock.
+flatbuffers==25.12.19 \
+    --hash=sha256:7634f50c427838bb021c2d66a3d1168e9d199b0607e6329399f04846d42e20b4
+kaldi-native-fbank==1.22.3 \
+    --hash=sha256:d48e5dd8e897bf4509be2c6eeb4bbab728eaaef1f214ae0510c96219c4253d17
+numpy==2.4.6 \
+    --hash=sha256:0ab0a9c4ffb1a6d95ef519fe4247dba8eb6b18ad93999f76b7f657039acabd47
+onnxruntime==1.29.0 \
+    --hash=sha256:16925ef8497e2c07e4b5ae15b504079b3ab3f65e22c58efd10dde0f3caea969a
+packaging==26.3 \
+    --hash=sha256:d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c
+protobuf==7.36.0 \
+    --hash=sha256:bf94a5917c71058262de683669bc0a797a7669d3de71f0b36d058e3194f47b44
+sddiar==0.3.0 \
+    --hash=sha256:695e332892fdc16225a924cabde56e58d9de2906bfa95eed2db29f5207fdd631

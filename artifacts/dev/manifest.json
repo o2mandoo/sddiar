@@ -1,0 +1,188 @@
+{
+  "schema_version": "1.0",
+  "pack_id": "development-onnx-cpu-20260826",
+  "pack_version": "0.3.0-dev1",
+  "integrity": {},
+  "production_approved": false,
+  "target": "macos-arm64-cp311",
+  "runtime_compatibility": {
+    "onnxruntime": {
+      "exact_version": "1.29.0"
+    },
+    "allowed_execution_providers": [
+      "CPUExecutionProvider"
+    ],
+    "target_matrix": [
+      {
+        "os": "darwin",
+        "arch": "arm64",
+        "python_abi": "cp311"
+      }
+    ]
+  },
+  "runtime_policy": {
+    "development_only": true,
+    "ort_disable_telemetry_runtime": true,
+    "production_requires_no_telemetry_build": true,
+    "execution_provider": "CPUExecutionProvider"
+  },
+  "feature_frontend": {
+    "implementation": "kaldi-native-fbank",
+    "version": "1.22.3",
+    "contract": "16kHz,80-bin,25ms/10ms,hamming,dither=0,snip_edges=true,use_energy=false,utterance-CMN",
+    "license": "Apache-2.0",
+    "production_status": "DIRECT_TORCHAUDIO_GOLDEN_PASS_REQUIRES_INTERNAL_APPROVAL",
+    "parity_evidence_id": "fbank_parity_torchaudio_v1"
+  },
+  "offline_lock": {
+    "path": "requirements-macos-arm64-cp311.lock",
+    "sha256": "8ecb36b1c80bdfc8312a4795bd9ff2e851f2401a439e00fa463f11740540c90c",
+    "clean_install_verified": true
+  },
+  "supporting_artifacts": [
+    {
+      "path": "sbom.cdx.json",
+      "sha256": "f9ca25c34b678907a1f027efbb7fd8355834e5ffd4a1aecdd97e22a08f5f66eb",
+      "status": "DEVELOPMENT_UNSIGNED"
+    },
+    {
+      "path": "THIRD_PARTY_NOTICES.md",
+      "sha256": "7184c63ba6af880d46c84b547a1a82a594b1e738314d3215409b92ea76312e04",
+      "status": "DEVELOPMENT_REVIEW_REQUIRED"
+    },
+    {
+      "path": "tooling/quantization-tooling.json",
+      "sha256": "288314e62b84d1d400e76df944b16d573dffead45b8fbd0badd748e0891129af",
+      "status": "DEVELOPMENT_BUILD_TIME_ONLY"
+    },
+    {
+      "path": "models/voxceleb_resnet34.qdq-s8s8-pc-minmax.int8.metadata.json",
+      "sha256": "a5ff5c457e9ee67cf0dc4a45b70557937e1a4713bf6d24e6226c47d6d385202d",
+      "status": "PARITY_REJECTED"
+    },
+    {
+      "path": "models/voxceleb_resnet34.qdq-s8s8-pc-minmax.q1b-firstconv-lastgemm-fp32.int8.metadata.json",
+      "sha256": "a0f5a9dab27f205ede7d854d431278ae423aea7baeeeb3e18704c729610a0131",
+      "status": "PARITY_REJECTED"
+    },
+    {
+      "path": "models/pyannote_segmentation3/development_evidence_candidate.json",
+      "sha256": "71ce39cea3f4dbe78fc3a6b07020bd9c5b55be83cf7b8f1893b695363d5d3f37",
+      "status": "FP32_EVIDENCE_CANDIDATE_INT8_REJECTED"
+    }
+  ],
+  "models": [
+    {
+      "model_id": "silero-vad-development-candidate",
+      "path": "models/silero_vad.onnx",
+      "sha256": "1a153a22f4509e292a94e67d6f9b85e8deb25b4988682b7e174c65279d8788e3",
+      "source_revision": "v6.2.1",
+      "source": "https://raw.githubusercontent.com/snakers4/silero-vad/v6.2.1/src/silero_vad/data/silero_vad.onnx",
+      "input_contract": "input[batch,context+512],state[2,batch,128],sr[int64]",
+      "license_status": "REQUIRES_INTERNAL_WEIGHT_APPROVAL"
+    },
+    {
+      "model_id": "wespeaker-voxceleb-resnet34-development-candidate",
+      "path": "models/voxceleb_resnet34.onnx",
+      "sha256": "9fea6516d7ad6bf0a76c7689f5a49b65d330fad6dde96c91bb4435ffbfe056a1",
+      "source_revision": "ff1ac5bca8ef11e90662b879aa923979e0bd277b",
+      "source": "https://huggingface.co/Wespeaker/wespeaker-voxceleb-resnet34/resolve/main/voxceleb_resnet34.onnx",
+      "input_contract": "feats[batch,frames,80]->embs[batch,256]",
+      "license_status": "UPSTREAM_STATES_VOXCELEB_CC_BY_4_0_REQUIRES_INTERNAL_APPROVAL"
+    },
+    {
+      "model_id": "wespeaker-voxceleb-campplus-development-challenger",
+      "path": "models/voxceleb_campplus.onnx",
+      "sha256": "b50810498b5bcf5773d086f6993d344476bd0c88b566a41e8d801aaf8461efad",
+      "source_revision": "acf623ad8ca746e50baa432255cf8fc57c669c45",
+      "source": "https://huggingface.co/Wespeaker/wespeaker-voxceleb-campplus/resolve/acf623ad8ca746e50baa432255cf8fc57c669c45/voxceleb_CAM%2B%2B.onnx",
+      "input_contract": "feats[batch,frames,80]->embs[batch,512]",
+      "status": "DEVELOPMENT_CHALLENGER_NOT_SELECTED",
+      "license_status": "UPSTREAM_STATES_VOXCELEB_CC_BY_4_0_REQUIRES_INTERNAL_APPROVAL"
+    }
+  ],
+  "quantization_candidates": [
+    {
+      "candidate_id": "wespeaker-voxceleb-resnet34-qdq-s8s8-pc-minmax-dev-20260826",
+      "production_approved": false,
+      "status": "PARITY_REJECTED",
+      "path": "models/voxceleb_resnet34.qdq-s8s8-pc-minmax.int8.onnx",
+      "bytes": 6772091,
+      "sha256": "396e15545315903245445aa5d4e9338fc262aa182f2e134b3b73bef37e40823f",
+      "source_model_sha256": "9fea6516d7ad6bf0a76c7689f5a49b65d330fad6dde96c91bb4435ffbfe056a1",
+      "input_contract": "float32 feats[batch,frames,80]->float32 embs[batch,256]",
+      "quantization_contract": "static QDQ S8S8, per-channel, MinMax, reduce_range=false, Conv+Gemm",
+      "metadata": "models/voxceleb_resnet34.qdq-s8s8-pc-minmax.int8.metadata.json",
+      "runtime_eligible": false
+    },
+    {
+      "candidate_id": "wespeaker-voxceleb-resnet34-qdq-s8s8-pc-minmax-q1b-firstconv-lastgemm-fp32-dev-20260826",
+      "production_approved": false,
+      "status": "PARITY_REJECTED",
+      "path": "models/voxceleb_resnet34.qdq-s8s8-pc-minmax.q1b-firstconv-lastgemm-fp32.int8.onnx",
+      "bytes": 10698494,
+      "sha256": "4632ef5eb528d42e0de13922944d2a609601b23f9cd5d6734a41667a5f35e09b",
+      "source_model_sha256": "9fea6516d7ad6bf0a76c7689f5a49b65d330fad6dde96c91bb4435ffbfe056a1",
+      "input_contract": "float32 feats[batch,frames,80]->float32 embs[batch,256]",
+      "quantization_contract": "static QDQ S8S8, per-channel, MinMax, reduce_range=false, Conv+Gemm except first Conv_3 and final Gemm_108 kept FP32",
+      "metadata": "models/voxceleb_resnet34.qdq-s8s8-pc-minmax.q1b-firstconv-lastgemm-fp32.int8.metadata.json",
+      "runtime_eligible": false,
+      "holdout_status": "NOT_INDEPENDENT_AFTER_Q1_REVIEW",
+      "fresh_file_level_holdout_required": true
+    }
+  ],
+  "evidence_model_trials": [
+    {
+      "trial_id": "pyannote-segmentation3-fp32-vs-dynamic-uint8-development-evidence-20260826",
+      "production_approved": false,
+      "status": "FP32_EVIDENCE_CANDIDATE_INT8_REJECTED",
+      "selected_artifact": "fp32",
+      "eligible_for_later_annotated_scd_osd_calibration": true,
+      "runtime_eligible_for_default_pipeline": false,
+      "approved_for_tracklet_split": false,
+      "approved_for_overlap_assignment": false,
+      "candidate_conditions": "later fresh file-level Korean annotated SCD/OSD calibration only; model access terms, MIT notice preservation, provenance, and internal redistribution approval required",
+      "fp32": {
+        "path": "models/pyannote_segmentation3/model.onnx",
+        "bytes": 5992913,
+        "sha256": "220ad67ca923bef2fa91f2390c786097bf305bceb5e261d4af67b38e938e1079"
+      },
+      "int8": {
+        "path": "models/pyannote_segmentation3/model.int8.onnx",
+        "bytes": 1540506,
+        "sha256": "d582f4b4c6b48205de7e0643c57df0df5615a3c176189be3fc461e9d18827b5d",
+        "quantization": "dynamic QUInt8"
+      },
+      "contract": "16kHz raw waveform, 160000-sample window, 16000-sample shift, 991/270 receptive field, 7 powerset classes, 3 local speakers, max 2 active",
+      "scope": "redacted uncalibrated speech/overlap/within-window-change evidence only; never direct tracklet splitting",
+      "metadata": "models/pyannote_segmentation3/development_evidence_candidate.json",
+      "license": "MIT",
+      "license_path": "models/pyannote_segmentation3/LICENSE"
+    }
+  ],
+  "files": [
+    {
+      "file_id": "silero-vad-development-candidate",
+      "role": "vad",
+      "relative_path": "models/silero_vad.onnx",
+      "bytes": 2327524,
+      "sha256": "1a153a22f4509e292a94e67d6f9b85e8deb25b4988682b7e174c65279d8788e3"
+    },
+    {
+      "file_id": "wespeaker-voxceleb-resnet34-development-candidate",
+      "role": "speaker_embedding",
+      "relative_path": "models/voxceleb_resnet34.onnx",
+      "bytes": 26534127,
+      "sha256": "9fea6516d7ad6bf0a76c7689f5a49b65d330fad6dde96c91bb4435ffbfe056a1"
+    }
+  ],
+  "wheels": [
+    {"path": "wheels/onnxruntime-1.29.0-cp311-cp311-macosx_14_0_arm64.whl", "sha256": "07c5907474dec4a2792fd7626b753dc66707808385a6d9eecf993db0066a9d0f"},
+    {"path": "wheels/numpy-2.4.6-cp311-cp311-macosx_14_0_arm64.whl", "sha256": "4cfe66903cc32a9921a6733d96b19bb6abf310397581bbad89c228f5abaf0ee8"},
+    {"path": "wheels/protobuf-7.36.0-cp310-abi3-macosx_10_9_universal2.whl", "sha256": "9103532dffd80c6fab7e50c65a31007680a06eb57537d437bb1b35812c138a37"},
+    {"path": "wheels/flatbuffers-25.12.19-py2.py3-none-any.whl", "sha256": "7634f50c427838bb021c2d66a3d1168e9d199b0607e6329399f04846d42e20b4"},
+    {"path": "wheels/packaging-26.3-py3-none-any.whl", "sha256": "d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c"},
+    {"path": "wheels/kaldi_native_fbank-1.22.3-cp311-cp311-macosx_11_0_arm64.whl", "sha256": "29452f2900e771086e9022dde17a92d191217ab3e34ca7dc361bd9be53e94fb4"},
+    {"path": "wheels/sddiar-0.3.0-py3-none-any.whl", "sha256": "695e332892fdc16225a924cabde56e58d9de2906bfa95eed2db29f5207fdd631"}
+  ]
+}

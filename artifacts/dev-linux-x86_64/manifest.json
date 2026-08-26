@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0",
+  "pack_id": "development-linux-x86_64-xeon-candidate-20260826",
+  "pack_version": "0.3.0-dev1",
+  "production_approved": false,
+  "target": "linux-x86_64-cp311",
+  "purpose": "Development wheel ingress for the Xeon cgroup-v1 target; official ORT is not the production no-telemetry build",
+  "offline_lock": {
+    "path": "requirements.lock",
+    "sha256": "c473b7f1a55590c0cffc7fa675556a36ea3676a9f8b1a9eb384eafd328a2e401"
+  },
+  "runtime_policy": {
+    "execution_provider": "CPUExecutionProvider",
+    "cpu_quota_equivalent": 1.0,
+    "ort_intra_op_threads": 1,
+    "ort_inter_op_threads": 1,
+    "production_requires_no_telemetry_build": true,
+    "actual_xeon_preflight_required": true
+  },
+  "wheels": [
+    {"path": "wheels/flatbuffers-25.12.19-py2.py3-none-any.whl", "sha256": "7634f50c427838bb021c2d66a3d1168e9d199b0607e6329399f04846d42e20b4"},
+    {"path": "wheels/kaldi_native_fbank-1.22.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", "sha256": "ce84c65779c9eed6ec02699797a4ba1859451977537a993be3ea8167a210ec3e"},
+    {"path": "wheels/numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", "sha256": "89cd468399cfd2504718f0ba50e410dca55a170b61a02ad92bb18c8a65186e93"},
+    {"path": "wheels/onnxruntime-1.29.0-cp311-cp311-manylinux_2_28_x86_64.whl", "sha256": "85f8e8406c52658735fe5c7fbfd3ebaa1ed340768324f6252e4274e374580a23"},
+    {"path": "wheels/packaging-26.3-py3-none-any.whl", "sha256": "d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c"},
+    {"path": "wheels/protobuf-7.36.0-cp310-abi3-manylinux2014_x86_64.whl", "sha256": "70f5ec8eb0da81a44360c0dc0beac99a0d78071d21956a7076bae8bd2051841b"},
+    {"path": "wheels/sddiar-0.3.0-py3-none-any.whl", "sha256": "695e332892fdc16225a924cabde56e58d9de2906bfa95eed2db29f5207fdd631"}
+  ]
+}
