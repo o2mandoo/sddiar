@@ -1,9 +1,11 @@
 # sddiar
 
 `SDD-SDDIAR-V1-001`을 구현하는 폐쇄망 CPU 기반 1~2인 화자분리
-라이브러리다. `0.4.0`은 실제 Silero VAD와 WeSpeaker ONNX 화자분리뿐 아니라
-8/16 kHz 입력 정규화, 외부 또는 로컬 STT 단어 시간축, 화자별 대본,
-fail-closed 품질 판정을 하나의 orchestration 경로로 연결한다.
+라이브러리다. 현재 source/wheel candidate `0.5.0`은 실제 Silero VAD와
+WeSpeaker ONNX 화자분리, 8/16 kHz 입력 정규화, 외부 또는 로컬 STT 단어
+시간축, 화자별 대본, fail-closed 품질 판정을 하나의 orchestration 경로로
+연결한다. 0.4.0 이후 bounded gain v2, BM-RCM UNKNOWN rescue, SCD/OSD shadow
+evidence, sealed blind annotation pack을 opt-in 또는 평가 경로로 추가했다.
 
 저장소는 [o2mandoo/sddiar](https://github.com/o2mandoo/sddiar)에 공개돼 있다.
 음성·대본·ONNX 모델·wheel은 Git에 올리지 않고 hash-locked 반입물로만
@@ -91,6 +93,10 @@ evaluator manifest와 annotator bundle은 분리되고 음성·빈 label은
 
 ## 폐쇄망 개발 설치
 
+아래 lock은 실제 1-CPU 장시간 evidence에 사용한 `0.4.0` development pack을
+재현한다. 현재 `0.5.0` source candidate의 wheel은 공개 checkout에서 다시
+빌드하거나 CI 산출물을 승인·반입해야 한다.
+
 ```sh
 python3.11 -m venv .venv
 .venv/bin/python -m pip install \
@@ -104,6 +110,14 @@ python3.11 -m venv .venv
 
 ```text
 eda81dfe7ad265d2143ea465562bd9ee8d6646f774696e78f504f4e176fe5ea3
+```
+
+현재 checkout에서 빌드해 no-index fresh install을 통과한
+`sddiar-0.5.0-py3-none-any.whl`의 로컬 SHA-256은 다음과 같다. 이것은
+development candidate 증거이며 production 서명 release를 의미하지 않는다.
+
+```text
+6356c85f00e27905b2f6aa6971b61c5060319983e311ff856d82d043e31aceea
 ```
 
 macOS arm64 fresh venv와 Linux x86_64 emulated clean install을 통과했다.

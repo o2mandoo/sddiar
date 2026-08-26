@@ -53,6 +53,7 @@
 - BM-RCM v2 relative conformal UNKNOWN rescue: 36.512초 신규 귀속, proxy precision 99.76%, 기존 assigned 변경 0초
 - private blind annotation pack v2: 48개/480초 non-overlap, evaluator/annotator 분리, atomic snapshot, strict hash verification
 - additive edit-count STT cascade oracle와 strategy-aware bounded artifact pack; 검증된 isolated runtime 부재로 CT2 executable backend는 미포함
+- 0.5.0 source/wheel candidate: gain v2, BM-RCM, SCD/OSD shadow, blind pack과 falsey boundary iterable 차단 포함
 
 ## production 전 아직 필요한 항목
 
@@ -88,9 +89,11 @@
 
 ## 실행 검증
 
-2026-08-26 기준 CPython 3.11 개발 runtime unittest 355개가 전부 통과했다. Windows `resource`/`_winapi` 부재 모의 import도 통과했다.
+2026-08-26 기준 0.5.0 source candidate의 CPython 3.11 개발 runtime unittest 355개가 전부 통과했다. Windows `resource`/`_winapi` 부재 모의 import도 통과했다.
 
 `sddiar-0.4.0-py3-none-any.whl` SHA-256은 `eda81dfe7ad265d2143ea465562bd9ee8d6646f774696e78f504f4e176fe5ea3`다. macOS arm64 fresh venv와 Linux x86_64 emulated hash-locked clean install·import를 통과했다.
+
+현재 checkout에서 빌드한 `sddiar-0.5.0-py3-none-any.whl` SHA-256은 `6356c85f00e27905b2f6aa6971b61c5060319983e311ff856d82d043e31aceea`이며 macOS arm64 no-index fresh install과 43개 module import probe를 통과했다. production 서명·wheelhouse 반입 승인을 대신하지 않는다.
 
 정확한 1.00-CPU quota baseline은 wall `120.844초`, RTF `0.03810`, RSS `180.28MB`였다. NumPy PCM + H2 single pass 후 wall `85.210초`, RTF `0.02687`, RSS `154.45MB`로 29.5% 개선됐고 H2/span/metric은 동일하다. Silero temporal ResNet challenger는 RTF `0.02892`로 full/holdout coverage `42.95%/42.45%`와 turn 품질을 개선했으나 holdout worst-speaker accuracy `94.18%`로 95% gate를 넘지 못해 default-off다.
 

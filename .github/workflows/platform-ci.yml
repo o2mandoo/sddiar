@@ -77,7 +77,7 @@ jobs:
       - name: Install the freshly built wheel
         run: >-
           python -c "import pathlib,subprocess,sys;
-          wheels=list(pathlib.Path('dist').glob('sddiar-0.4.0-*.whl'));
+          wheels=list(pathlib.Path('dist').glob('sddiar-0.5.0-*.whl'));
           assert len(wheels)==1;
           subprocess.check_call([sys.executable,'-m','pip','install','--no-deps',str(wheels[0])])"
 
@@ -96,7 +96,7 @@ jobs:
         run: >-
           python scripts/ci_verify_wheel.py
           --wheel-dir dist --source-root src
-          --expected-version 0.4.0 --expected-arch ${{ matrix.arch }}
+          --expected-version 0.5.0 --expected-arch ${{ matrix.arch }}
 
       - name: Enforce zero-network source policy
         run: >-
