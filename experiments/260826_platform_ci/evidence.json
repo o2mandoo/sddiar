@@ -3,14 +3,16 @@
   "kind": "sddiar-native-platform-ci-evidence",
   "recorded_date": "2026-08-26",
   "production_approved": false,
-  "source_commit": "dcae3ea01f89a5fbde372eaa1b95d3925503e7a8",
+  "source_commit": "d681d82c0f2e3cc3363306a85a1d05ae0054321c",
+  "sddiar_version": "0.5.0",
+  "test_count": 359,
   "workflow": {
     "name": "platform-ci",
-    "run_id": 32949975904,
-    "url": "https://github.com/o2mandoo/sddiar/actions/runs/32949975904",
+    "run_id": 32970936530,
+    "url": "https://github.com/o2mandoo/sddiar/actions/runs/32970936530",
     "conclusion": "success",
-    "created_at": "2026-08-26T08:52:07Z",
-    "completed_at": "2026-08-26T08:53:40Z",
+    "created_at": "2026-08-26T12:52:28Z",
+    "completed_at": "2026-08-26T12:54:40Z",
     "checkout_action_commit": "3d3c42e5aac5ba805825da76410c181273ba90b1",
     "setup_python_action_commit": "5fda3b95a4ea91299a34e894583c3862153e4b97"
   },
@@ -19,36 +21,36 @@
       "name": "linux-x86_64",
       "runner": "ubuntu-24.04",
       "architecture": "x86_64",
-      "job_id": 98118975081,
+      "job_id": 98184256948,
       "result": "success",
-      "duration_seconds": 26,
+      "duration_seconds": 33,
       "optional_cpu_runtime_installed": true
     },
     {
       "name": "windows-x86_64",
       "runner": "windows-2025",
       "architecture": "x86_64",
-      "job_id": 98118974888,
+      "job_id": 98184257042,
       "result": "success",
-      "duration_seconds": 89,
+      "duration_seconds": 128,
       "optional_cpu_runtime_installed": true
     },
     {
       "name": "macos-arm64",
       "runner": "macos-15",
       "architecture": "arm64",
-      "job_id": 98118975155,
+      "job_id": 98184256814,
       "result": "success",
-      "duration_seconds": 30,
+      "duration_seconds": 35,
       "optional_cpu_runtime_installed": true
     },
     {
       "name": "macos-x86_64",
       "runner": "macos-15-intel",
       "architecture": "x86_64",
-      "job_id": 98118975194,
+      "job_id": 98184257067,
       "result": "success",
-      "duration_seconds": 56,
+      "duration_seconds": 82,
       "optional_cpu_runtime_installed": false,
       "reason": "onnxruntime-1.29.0-and-kaldi-native-fbank-1.22.3-official-wheels-unavailable"
     }
@@ -72,14 +74,18 @@
   "defects_found_and_fixed_by_native_ci": [
     "Windows-CRLF-changed-hash-bound-lock-bytes",
     "POSIX-resource-import-in-package-and-experiment-scripts",
-    "Windows-backslash-rejected-by-direct-words-artifact-loader"
+    "Windows-backslash-rejected-by-direct-words-artifact-loader",
+    "Windows-text-mode-corrupted-private-input-snapshots",
+    "Windows-chmod-could-not-prove-owner-only-private-pack-permissions",
+    "private-pack-now-verifies-mode-owner-and-hashes-before-publication"
   ],
   "limitations": [
     "no-real-model-inference-on-GitHub-runners",
     "macOS-Intel-optional-runtime-remains-source-build-only",
     "official-onnxruntime-wheels-are-not-no-telemetry-production-evidence",
     "not-the-Xeon-6230R-cgroup-v1-target",
-    "no-independent-annotated-Korean-quality-dataset"
+    "no-independent-annotated-Korean-quality-dataset",
+    "Windows-private-blind-pack-builder-is-fail-closed-until-a-verifiable-DACL-backend-exists"
   ],
   "privacy": {
     "audio": "absent-from-current-and-complete-Git-history",
