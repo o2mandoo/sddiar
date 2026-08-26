@@ -48,6 +48,11 @@
 - hash-bound whisper.cpp local backend와 privacy-safe Korean CER/WER/SA-WER evaluation
 - 0.4.0 persistent 1-CPU worker: 105.7분 처리, deterministic digest, warm memory gate
 - GitHub native CI: Linux x64, Windows x64, macOS Arm/Intel wheel build·fresh install·test green
+- bounded global gain v2 public opt-in API: 저음량 2개 arm H2 복구, 정상/8k exact no-op
+- sealed SCD/OSD shadow gate: source/view/model lineage, 좌우 dual probe, overlap veto, release enforcement 미개방
+- BM-RCM v2 relative conformal UNKNOWN rescue: 36.512초 신규 귀속, proxy precision 99.76%, 기존 assigned 변경 0초
+- private blind annotation pack v2: 48개/480초 non-overlap, evaluator/annotator 분리, atomic snapshot, strict hash verification
+- additive edit-count STT cascade oracle와 strategy-aware bounded artifact pack; 검증된 isolated runtime 부재로 CT2 executable backend는 미포함
 
 ## production 전 아직 필요한 항목
 
@@ -60,6 +65,9 @@
 - 남성-남성/여성-여성/남녀, 8/16 kHz, overlap, third-party, long-file multi-recording calibration/independent holdout
 - 실제 Xeon Gold 6230R 1.00-CPU cgroup-v1의 process-tree RSS, cold/warm 반복, full-hour profile
 - 실제 GenOS/service adapter, persistence와 manual correction UI
+- 생성된 blind pack의 사람 annotation 및 second-annotator 12개 독립 검수
+- SCD 11개 model candidate의 좌우 WeSpeaker probe shadow 실행과 independent SCD/OSD score
+- CT2/OpenVINO용 verified isolated interpreter/worker/model snapshot과 실제 Xeon 실행
 
 ## 다음 구현 gate
 
@@ -80,7 +88,7 @@
 
 ## 실행 검증
 
-2026-08-26 기준 CPython 3.11 개발 runtime test 285개가 전부 통과했다. Windows `resource`/`_winapi` 부재 모의 import도 통과했다.
+2026-08-26 기준 CPython 3.11 개발 runtime unittest 355개가 전부 통과했다. Windows `resource`/`_winapi` 부재 모의 import도 통과했다.
 
 `sddiar-0.4.0-py3-none-any.whl` SHA-256은 `eda81dfe7ad265d2143ea465562bd9ee8d6646f774696e78f504f4e176fe5ea3`다. macOS arm64 fresh venv와 Linux x86_64 emulated hash-locked clean install·import를 통과했다.
 

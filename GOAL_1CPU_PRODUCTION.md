@@ -57,6 +57,20 @@
 - RNNoise+ResNet은 noise 20dB에서 H1→H2, assigned rate `42.37%`, worst-speaker accuracy `95.10%`를 보였다.
 - RNNoise source-time/resampler/native five-target evidence가 미승인이라 default off이며 release 권한이 없다.
 
+## 후속 BM-RCM / boundary shadow 결과
+
+- BM-RCM v2는 44 candidate 중 17 singleton만 선택해 `UNKNOWN` 36.512초를
+  추가 귀속했다. 신규 proxy precision `99.76%`, 기존 assigned 변경 `0초`였다.
+- 전체 assigned accuracy `99.05→99.08%`, worst-speaker accuracy
+  `94.54→95.30%`, worst-speaker coverage `13.75→16.11%`로 개선됐다.
+- 추가 wall `6.843초`, UNKNOWN 상대 감소 `8.78%`로 performance/coverage
+  사전 gate는 미통과다. 따라서 default-off high-precision challenger다.
+- pyannote FP32 전체 shadow는 52.86분 입력을 `56.47초`에 처리해 diagnostic
+  SCD candidate `11개`를 만들었다. 좌우 WeSpeaker dual probe 전이므로 split
+  권한은 없다.
+- 실제 음성에서 48개/480초 non-overlap blind pack을 만들고 hash/permission을
+  검증했다. human label이 비어 있으므로 아직 release 정답셋이 아니다.
+
 ## 단일 파일 개발 회귀 gate
 
 이 gate는 현재 파일에 대한 파괴 방지용이며 release 품질 주장이 아니다.

@@ -66,6 +66,29 @@ Silicon 위 Linux cgroup-v2 proxy이며 실제 Xeon 6230R/cgroup-v1 증거가
 분리하되 현재 둘 다 production 승인 상태가 아니다. 상세 근거는
 [CPU STT 대체 검토](research/CPU_STT_REPLACEMENT.md)에 있다.
 
+## 후속 알고리즘 challenger
+
+고정 threshold 확대나 `UNKNOWN` 강제 채우기 대신 block-conditional conformal
+prediction인 BM-RCM v2를 추가했다. H2 stable anchor만 calibration block으로
+사용하고 prediction set이 singleton인 기존 `UNKNOWN` run만 후보화한다.
+
+실제 3,171.732초 strict A/B에서 44개 후보 중 17개를 선택해 36.512초를
+추가 귀속했다. 신규 구간 Clova proxy precision은 99.76%, 전체 assigned
+accuracy는 99.05→99.08%, worst-speaker accuracy는 94.54→95.30%였고 기존
+assigned 변경은 0초였다. 추가 wall이 6.843초이고 독립 정답이 없으므로
+`--bm-rcm-experimental` opt-in challenger이며 기본값은 아니다.
+
+SCD/OSD는 pyannote segmentation3 model evidence와 좌우 WeSpeaker probe가
+동시에 동의해야 하는 shadow-only gate를 제공한다. 전체 파일 model shadow는
+56.47초에 SCD candidate 11개를 관찰했지만 span 변경 권한은 열지 않았다.
+release binding만으로도 per-job event를 만들 수 없으며 signed evidence stage가
+추가되기 전 enforce는 fail-closed다.
+
+실제 음성에서 48개·총 480초 non-overlap blind annotation pack도 생성했다.
+evaluator manifest와 annotator bundle은 분리되고 음성·빈 label은
+`.private/blind-annotation/` 아래에만 저장된다. 사람이 label을 입력하기 전에는
+정답셋이나 DER 증거로 부르지 않는다.
+
 ## 폐쇄망 개발 설치
 
 ```sh
@@ -130,7 +153,7 @@ PYTHONPATH=src python3.11 scripts/verify_offline_release.py release \
   --production --scan-source src/sddiar
 ```
 
-2026-08-26 기준 CPython 3.11 개발 runtime에서 325개 unittest가 통과했다.
+2026-08-26 기준 CPython 3.11 개발 runtime에서 355개 unittest가 통과했다.
 `src/sddiar`, `scripts`, `bench/one_cpu` static zero-network scan은 issue 0건이다.
 production release root가 아직 없으므로 production 검증은
 `RELEASE_ROOT_MISSING`으로 fail-closed되는 것이 정상이다.
@@ -145,5 +168,9 @@ production release root가 아직 없으므로 production 검증은
 - [RNNoise challenger](docs/RNNOISE_EXPERIMENTAL_LANE.md)
 - [구현 현황](IMPLEMENTATION_STATUS.md)
 - [실제 음성 proxy 결과](experiments/260824_clova_proxy/RESULT.md)
+- [BM-RCM 실제 A/B](experiments/260826_bm_rcm/RESULT.md)
+- [SCD/OSD shadow](experiments/260826_scd_osd_shadow/RESULT.md)
+- [blind annotation pack evidence](experiments/260826_blind_annotation/RESULT.md)
+- [gain v2 stability](experiments/260826_gain_v2_stability/RESULT.md)
 - [artifact intake gate](docs/ARTIFACT_INTAKE_GATE.md)
 - [전체 SDD](SDD_offline_cpu_speaker_diarization_v1_ko.md)
