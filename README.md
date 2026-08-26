@@ -34,15 +34,15 @@ wheel과 하나의 persistent session으로 두 번 처리했다.
 
 | 항목 | cold | warm |
 |---|---:|---:|
-| wall | 84.596초 | 86.535초 |
-| RTF | 0.02667 | 0.02728 |
-| process-tree RSS | 160.45MB | 165.06MB |
-| throttled wall ratio | 0.0288% | 0.0362% |
+| wall | 83.715초 | 83.820초 |
+| RTF | 0.02639 | 0.02643 |
+| process-tree RSS | 159.53MB | 165.06MB |
+| throttled wall ratio | 0.3671% | 0.0000% |
 
 두 pass의 timeline digest는 서로 같고 0.3 canonical과도 일치했다. warm
-resident 증가는 2.874%, cgroup peak는 249.1MiB였다. 이 수치는 Apple
+resident 증가는 3.466%, cgroup peak는 248.4MiB였다. 이 수치는 Apple
 Silicon 위 Linux cgroup-v2 proxy이며 실제 Xeon 6230R/cgroup-v1 증거가
-아니다. 256MiB 여유가 약 7MiB뿐이므로 dedicated worker를 전제로 한다.
+아니다. 256MiB 여유가 약 7.6MiB뿐이므로 dedicated worker를 전제로 한다.
 
 5분/10분 화자분리 단순 환산은 약 8초/16초다. STT는 포함하지 않는다.
 
@@ -80,7 +80,7 @@ python3.11 -m venv .venv
 `sddiar-0.4.0-py3-none-any.whl` SHA-256:
 
 ```text
-5cd27e1387806c0af763978100aa51a4cde15a40b2b1b8645df1ee24417cad87
+eda81dfe7ad265d2143ea465562bd9ee8d6646f774696e78f504f4e176fe5ea3
 ```
 
 macOS arm64 fresh venv와 Linux x86_64 emulated clean install을 통과했다.
@@ -112,7 +112,7 @@ PYTHONPATH=src python3.11 scripts/verify_offline_release.py release \
   --production --scan-source src/sddiar
 ```
 
-2026-08-26 기준 CPython 3.11 개발 runtime에서 281개 test가 통과했다.
+2026-08-26 기준 CPython 3.11 개발 runtime에서 285개 test가 통과했다.
 `src/sddiar`, `scripts`, `bench/one_cpu` static zero-network scan은 issue 0건이다.
 production release root가 아직 없으므로 production 검증은
 `RELEASE_ROOT_MISSING`으로 fail-closed되는 것이 정상이다.

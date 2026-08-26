@@ -79,9 +79,9 @@
 
 ## 실행 검증
 
-2026-08-26 기준 CPython 3.11 개발 runtime test 281개가 전부 통과했다. Windows `resource`/`_winapi` 부재 모의 import도 통과했다.
+2026-08-26 기준 CPython 3.11 개발 runtime test 285개가 전부 통과했다. Windows `resource`/`_winapi` 부재 모의 import도 통과했다.
 
-`sddiar-0.4.0-py3-none-any.whl` SHA-256은 `5cd27e1387806c0af763978100aa51a4cde15a40b2b1b8645df1ee24417cad87`다. macOS arm64 fresh venv와 Linux x86_64 emulated hash-locked clean install·import를 통과했다.
+`sddiar-0.4.0-py3-none-any.whl` SHA-256은 `eda81dfe7ad265d2143ea465562bd9ee8d6646f774696e78f504f4e176fe5ea3`다. macOS arm64 fresh venv와 Linux x86_64 emulated hash-locked clean install·import를 통과했다.
 
 정확한 1.00-CPU quota baseline은 wall `120.844초`, RTF `0.03810`, RSS `180.28MB`였다. NumPy PCM + H2 single pass 후 wall `85.210초`, RTF `0.02687`, RSS `154.45MB`로 29.5% 개선됐고 H2/span/metric은 동일하다. Silero temporal ResNet challenger는 RTF `0.02892`로 full/holdout coverage `42.95%/42.45%`와 turn 품질을 개선했으나 holdout worst-speaker accuracy `94.18%`로 95% gate를 넘지 못해 default-off다.
 
@@ -89,7 +89,7 @@ Clova proxy holdout에서는 turn coverage `70.42%`, covered-turn accuracy `94.0
 
 동일 파일의 decoder/MICRO/CAM++/cluster-ceiling 총 A/B는 모두 fail-closed로 canonical을 유지했다. `STOP_SAME_FILE_THRESHOLD_TUNING_DATA_BLOCKER`가 현재 품질 상태이며 다음 threshold 선택에는 독립 annotation이 필요하다.
 
-0.4.0 wheel을 설치한 Linux arm64 1-CPU/256MiB container에서 같은 장시간 입력을 한 persistent session으로 두 번 처리했다. cold/warm RTF는 `0.02667/0.02728`, timeline digest는 서로 및 0.3 canonical과 동일했고, warm resident 증가는 `2.874%`, cgroup peak는 `249.1MiB`였다. 이는 cgroup-v2 local proxy이지 Xeon/cgroup-v1 release 증거가 아니다.
+최종 0.4.0 wheel을 설치한 Linux arm64 1-CPU/256MiB container에서 같은 장시간 입력을 한 persistent session으로 두 번 처리했다. cold/warm RTF는 `0.02639/0.02643`, timeline digest는 서로 및 0.3 canonical과 동일했고, warm resident 증가는 `3.466%`, cgroup peak는 `248.4MiB`였다. 이는 cgroup-v2 local proxy이지 Xeon/cgroup-v1 release 증거가 아니다.
 
 Whisper-only 대체 실험에서 5분 Clova proxy CER는 base Q5 `39.53%`, small Q5 `26.50%`, turbo Q5 `15.90%`, SenseVoice INT8 `24.35%`였다. turbo는 5분 처리에 `629.91초`, SenseVoice는 `8.13초`였다. 정확도와 속도를 동시에 만족한 CPU-only 후보가 없어, 현재 권고는 기존 STT를 유지하고 sddiar 화자 귀속을 추가하는 것이다.
 

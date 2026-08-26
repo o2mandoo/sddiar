@@ -120,10 +120,10 @@ authority와 native five-target 증거가 없어 release 권한은 없다.
 1 CPU/256MiB/network-none/read-only Linux arm64 container에서 3,171.732초 입력을
 한 session으로 두 번 처리했다.
 
-- cold/warm RTF `0.02667/0.02728`
+- cold/warm RTF `0.02639/0.02643`
 - timeline digest 두 pass 및 0.3 canonical exact
-- warm resident 증가 `2.874%`
-- cgroup peak `249.1MiB`, throttle `0.0288%/0.0362%`
+- warm resident 증가 `3.466%`
+- cgroup peak `248.4MiB`, throttle `0.3671%/0.0000%`
 
 초기 warm gate가 누적 `memory.peak`를 resident로 잘못 비교해 false failure를
 냈다. peak는 256MiB hard cap에만, warm leak는 current RSS/PSS/cgroup current에만

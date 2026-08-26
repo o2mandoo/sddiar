@@ -14,10 +14,11 @@
   },
   "artifacts": {
     "sddiar_version": "0.4.0",
-    "wheel_sha256": "5cd27e1387806c0af763978100aa51a4cde15a40b2b1b8645df1ee24417cad87",
-    "container_image_digest": "sha256:bd7f67a7f0a4fb951a64aab21086b0590e4d4212ae771a45f6f47ebffca47a38",
+    "source_commit": "3be40b62bb920e589c263f2f01522dba0263821f",
+    "wheel_sha256": "eda81dfe7ad265d2143ea465562bd9ee8d6646f774696e78f504f4e176fe5ea3",
+    "container_image_digest": "sha256:a17a327619d6b019c881ff70fefb86bfcb34510d2a6e7407cf371d9858501158",
     "base_image_digest": "sha256:d29f48a31a8b408ed19272ca1e7b10ebae13b240a27e862d3d4217c528e2e0c3",
-    "full_report_sha256": "603fdceb582cc9e6ef58d09534dfdb963465032bd0de442391414fed39695265"
+    "full_report_sha256": "445bdbae982a7257080139b5af99a6f66c597079ec09851e9b8946c680417509"
   },
   "input": {
     "duration_us_per_pass": 3171732000,
@@ -36,24 +37,24 @@
   },
   "performance": {
     "cold": {
-      "wall_seconds": 84.595894,
-      "rtf": 0.026672,
-      "throttled_wall_ratio": 0.00028808,
-      "process_tree_rss_bytes": 160452608,
-      "process_tree_pss_bytes": 160448512
+      "wall_seconds": 83.715197,
+      "rtf": 0.026394,
+      "throttled_wall_ratio": 0.00367064,
+      "process_tree_rss_bytes": 159531008,
+      "process_tree_pss_bytes": 159526912
     },
     "warm": {
-      "wall_seconds": 86.534800,
-      "rtf": 0.027283,
-      "throttled_wall_ratio": 0.00036249,
-      "process_tree_rss_bytes": 165064704,
-      "process_tree_pss_bytes": 165060608
+      "wall_seconds": 83.819986,
+      "rtf": 0.026427,
+      "throttled_wall_ratio": 0.0,
+      "process_tree_rss_bytes": 165060608,
+      "process_tree_pss_bytes": 165056512
     },
-    "warm_resident_growth_percent": 2.874429,
-    "max_growth_bytes_from_pre_inference_baseline": 57507840,
-    "cgroup_peak_bytes": 261218304,
-    "cgroup_peak_mib": 249.117188,
-    "memory_headroom_to_256_mib": 7217152
+    "warm_resident_growth_percent": 3.466160,
+    "max_growth_bytes_from_pre_inference_baseline": 57335808,
+    "cgroup_peak_bytes": 260419584,
+    "cgroup_peak_mib": 248.355469,
+    "memory_headroom_to_256_mib": 8015872
   },
   "gates": {
     "max_rtf": 0.35,

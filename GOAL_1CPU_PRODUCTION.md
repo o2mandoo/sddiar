@@ -38,7 +38,7 @@
 | throttled wall ratio | 0.0104% | 0.0038% |
 | 결과/metric | canonical과 동일 | B0와 동일 |
 
-설치된 `0.4.0` wheel과 persistent session으로 두 번 처리한 strict gate는 cold/warm wall `84.596/86.535초`, RTF `0.02667/0.02728`, process-tree RSS `160.45/165.06MB`, warm resident 증가 `2.874%`였다. timeline digest는 두 pass 및 0.3 canonical과 같았다. cgroup peak는 `249.1MiB`로 256MiB 제한을 통과했지만 headroom이 약 7MiB라 dedicated worker가 필수다. 이는 Linux arm64 Docker quota proxy이며 Xeon 성능 증거가 아니다.
+설치된 최종 `0.4.0` wheel과 persistent session으로 두 번 처리한 strict gate는 cold/warm wall `83.715/83.820초`, RTF `0.02639/0.02643`, process-tree RSS `159.53/165.06MB`, warm resident 증가 `3.466%`였다. timeline digest는 두 pass 및 0.3 canonical과 같았다. cgroup peak는 `248.4MiB`로 256MiB 제한을 통과했지만 headroom이 약 7.6MiB라 dedicated worker가 필수다. 이는 Linux arm64 Docker quota proxy이며 Xeon 성능 증거가 아니다.
 
 ## 현재 품질 병목
 

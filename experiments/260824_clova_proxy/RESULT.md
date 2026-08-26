@@ -122,10 +122,10 @@ global gain v2는 1.25배 deadband로 정상/canonical을 exact no-op 처리하�
 복원되지 않았고, RNNoise+ResNet experimental lane에서만 H2가 됐다. 이 결과는
 파생 단일 artifact이므로 모두 default off다.
 
-설치된 0.4.0 wheel을 1 CPU/256MiB/network-none/read-only container에서 한
-persistent session으로 두 번 실행했다. cold/warm RTF는 `0.02667/0.02728`,
+설치된 최종 0.4.0 wheel을 1 CPU/256MiB/network-none/read-only container에서
+한 persistent session으로 두 번 실행했다. cold/warm RTF는 `0.02639/0.02643`,
 timeline digest는 두 pass 및 0.3 canonical과 동일했다. warm resident 증가는
-`2.874%`, cgroup peak는 `249.1MiB`였다. 실제 Xeon/cgroup-v1 증거는 아니다.
+`3.466%`, cgroup peak는 `248.4MiB`였다. 실제 Xeon/cgroup-v1 증거는 아니다.
 
 Clova transcript를 enterprise proxy로 둔 STT 5분 비교에서는 Whisper turbo Q5
 CER `15.90%`가 가장 낮았지만 wall `629.91초`였고, SenseVoice INT8은

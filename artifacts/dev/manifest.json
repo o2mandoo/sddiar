@@ -36,13 +36,13 @@
   },
   "offline_lock": {
     "path": "requirements-macos-arm64-cp311.lock",
-    "sha256": "8e15eafd19de43fe70e55df5eab8eb1dd9ee8d524d0f9d12f3a5c5fbf5406782",
+    "sha256": "a91fe81be1406296054660c0ff8cca9e2fb23c6882522cdcb05c9ae8f691e1ea",
     "clean_install_verified": true
   },
   "supporting_artifacts": [
     {
       "path": "sbom.cdx.json",
-      "sha256": "a95f557e7b66050ceaba3a507e94c602bc4cd4c525de3be7a3dea01302f44adf",
+      "sha256": "4f1984ad08abd9984dbbc8b93a258182cf199d469ec4f2ae3862da50cd7b0eac",
       "status": "DEVELOPMENT_UNSIGNED"
     },
     {
@@ -183,6 +183,6 @@
     {"path": "wheels/flatbuffers-25.12.19-py2.py3-none-any.whl", "sha256": "7634f50c427838bb021c2d66a3d1168e9d199b0607e6329399f04846d42e20b4"},
     {"path": "wheels/packaging-26.3-py3-none-any.whl", "sha256": "d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c"},
     {"path": "wheels/kaldi_native_fbank-1.22.3-cp311-cp311-macosx_11_0_arm64.whl", "sha256": "29452f2900e771086e9022dde17a92d191217ab3e34ca7dc361bd9be53e94fb4"},
-    {"path": "wheels/sddiar-0.4.0-py3-none-any.whl", "sha256": "5cd27e1387806c0af763978100aa51a4cde15a40b2b1b8645df1ee24417cad87"}
+    {"path": "wheels/sddiar-0.4.0-py3-none-any.whl", "sha256": "eda81dfe7ad265d2143ea465562bd9ee8d6646f774696e78f504f4e176fe5ea3"}
   ]
 }

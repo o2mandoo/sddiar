@@ -30,7 +30,7 @@
   },
   "available_components_lock": {
     "path": "available-components.lock",
-    "sha256": "6335d5bebb6c6cda50363b846f3acd7983287b70bb2d8ba0410b9a811c4b176f",
+    "sha256": "52a3fa67070860497932fba9d04a87ab708a16eaf63b67f005da7b97d2a347bd",
     "scope": "available_components_only",
     "complete_runtime_lock": false
   },
@@ -39,7 +39,7 @@
     {"path": "wheels/numpy-2.4.6-cp311-cp311-macosx_10_9_x86_64.whl", "sha256": "0280e0356c0829a18d9de1cb7eee50ec22ca639878d7240307ca0943d73cd2c4"},
     {"path": "wheels/packaging-26.3-py3-none-any.whl", "sha256": "d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c"},
     {"path": "wheels/protobuf-7.36.0-cp310-abi3-macosx_10_9_universal2.whl", "sha256": "9103532dffd80c6fab7e50c65a31007680a06eb57537d437bb1b35812c138a37"},
-    {"path": "wheels/sddiar-0.4.0-py3-none-any.whl", "sha256": "5cd27e1387806c0af763978100aa51a4cde15a40b2b1b8645df1ee24417cad87"}
+    {"path": "wheels/sddiar-0.4.0-py3-none-any.whl", "sha256": "eda81dfe7ad265d2143ea465562bd9ee8d6646f774696e78f504f4e176fe5ea3"}
   ],
   "production_blockers": [
     "official onnxruntime 1.29.0 macOS x86_64 wheel is unavailable",
