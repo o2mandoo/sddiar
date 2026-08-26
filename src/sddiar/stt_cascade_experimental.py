@@ -47,6 +47,23 @@ _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 _SAFE_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 _SAFE_IDENTITY = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/+-]{0,255}$")
 _PACK_TOKEN = object()
+_ORACLE_TOP_LEVEL_KEYS = frozenset({"metric_kind", "reference_unit_count", "segments", "observations", "rows"})
+_ORACLE_SEGMENT_KEYS = frozenset({
+    "start_us", "end_us", "start", "end", "start_sec", "end_sec",
+    "segment_start_us", "segment_end_us",
+    "draft_error_count", "draft_edit_count", "refiner_error_count", "refiner_edit_count",
+    "draft_redacted_chars", "draft_redacted_char_count", "draft_chars", "draft_char_count",
+    "refiner_redacted_chars", "refiner_redacted_char_count", "refiner_chars", "refiner_char_count",
+    "reference_redacted_chars", "reference_redacted_char_count", "reference_chars", "reference_char_count", "ref_chars",
+    "hard", "hard_segment", "router_hard", "stitch_duplicate_risk", "duplicate_risk",
+    "stitch_deletion_risk", "deletion_risk",
+})
+_PACK_TOP_LEVEL_KEYS = frozenset({
+    "pack_id", "strategy", "runtime_abi", "platform", "platform_identity", "artifact_root", "artifacts", "files",
+})
+_PACK_ARTIFACT_KEYS = frozenset({
+    "artifact_id", "file_id", "group", "role", "path", "local_path", "relative_path", "sha256", "bytes",
+})
 
 
 class SttCascadeExperimentalError(ValueError):
@@ -199,6 +216,9 @@ class SttCascadeSegment:
     def from_mapping(cls, row: Mapping[str, Any]) -> "SttCascadeSegment":
         if not isinstance(row, Mapping):
             raise SttCascadeContractError("each segment must be an object")
+        unknown = set(row) - _ORACLE_SEGMENT_KEYS
+        if unknown:
+            raise SttCascadeContractError("segment contains a non-allowlisted field")
         # ``segment_*`` is accepted for callers that keep the segment prefix
         # on all timing fields; it is still reduced to source timing only.
         start_row = row if "start_us" in row or "start" in row or "start_sec" in row else {"start_us": row.get("segment_start_us")}
@@ -411,7 +431,9 @@ def analyze_stt_cascade_oracle(value: Any, *, budgets: Iterable[int | float] = D
         raise SttCascadeContractError("max_total_duration_us must be a positive integer")
     if type(max_solver_states) is not int or max_solver_states <= 0:
         raise SttCascadeContractError("max_solver_states must be a positive integer")
-    if not isinstance(value, Mapping) or value.get("metric_kind") not in SUPPORTED_ERROR_METRICS:
+    if not isinstance(value, Mapping) or set(value) - _ORACLE_TOP_LEVEL_KEYS:
+        raise SttCascadeContractError("oracle payload contains a non-allowlisted field")
+    if value.get("metric_kind") not in SUPPORTED_ERROR_METRICS:
         raise SttCascadeContractError("metric_kind must identify additive character or word edit counts")
     metric_kind = str(value["metric_kind"])
     rows = _segments(value, max_segments=max_segments)
@@ -512,9 +534,10 @@ class VerifiedLocalSttPack:
     platform: str
     artifacts: Mapping[str, VerifiedExperimentalArtifact]
     identity_sha256: str
+    _root_path_seal: tuple[tuple[str, int, int, int, str], ...]
     _token: object = field(repr=False, compare=False)
 
-    def __init__(self, pack_id: str, strategy: str, runtime_abi: str, platform: str, artifacts: Mapping[str, VerifiedExperimentalArtifact], identity_sha256: str, *, _token: object | None = None) -> None:
+    def __init__(self, pack_id: str, strategy: str, runtime_abi: str, platform: str, artifacts: Mapping[str, VerifiedExperimentalArtifact], identity_sha256: str, root_path_seal: tuple[tuple[str, int, int, int, str], ...], *, _token: object | None = None) -> None:
         if _token is not _PACK_TOKEN:
             raise TypeError("VerifiedLocalSttPack must be created by verify_local_stt_pack")
         object.__setattr__(self, "pack_id", pack_id)
@@ -523,9 +546,11 @@ class VerifiedLocalSttPack:
         object.__setattr__(self, "platform", platform)
         object.__setattr__(self, "artifacts", MappingProxyType(dict(artifacts)))
         object.__setattr__(self, "identity_sha256", identity_sha256)
+        object.__setattr__(self, "_root_path_seal", root_path_seal)
         object.__setattr__(self, "_token", _token)
 
     def assert_artifacts_unchanged(self) -> None:
+        _assert_root_path_seal(self._root_path_seal)
         for artifact in self.artifacts.values():
             artifact.assert_unchanged()
 
@@ -609,6 +634,36 @@ def _identity_string(value: Any, name: str) -> str:
     return value
 
 
+def _root_path_seal(path: Path) -> tuple[tuple[str, int, int, int, str], ...]:
+    """Capture all root parent components for later symlink-swap detection."""
+    components = [Path(path.anchor)]
+    current = Path(path.anchor)
+    for part in path.parts[1:]:
+        current = current / part
+        components.append(current)
+    snapshots: list[tuple[str, int, int, int, str]] = []
+    for component in components:
+        try:
+            info = component.lstat()
+            resolved = str(component.resolve(strict=True))
+        except (OSError, RuntimeError):
+            raise SttCascadeArtifactError("artifact root parent is unavailable") from None
+        snapshots.append((str(component), int(info.st_dev), int(info.st_ino), int(info.st_mode), resolved))
+    return tuple(snapshots)
+
+
+def _assert_root_path_seal(seal: tuple[tuple[str, int, int, int, str], ...]) -> None:
+    for raw, device, inode, mode, resolved in seal:
+        component = Path(raw)
+        try:
+            info = component.lstat()
+            current_resolved = str(component.resolve(strict=True))
+        except (OSError, RuntimeError):
+            raise SttCascadeArtifactError("artifact root parent changed") from None
+        if (int(info.st_dev), int(info.st_ino), int(info.st_mode), current_resolved) != (device, inode, mode, resolved):
+            raise SttCascadeArtifactError("artifact root parent changed")
+
+
 def verify_local_stt_pack(pack: Mapping[str, Any] | Sequence[Mapping[str, Any]], *, pack_id: str | None = None,
                           strategy: str | None = None, runtime_abi: str | None = None,
                           platform: str | None = None,
@@ -621,6 +676,8 @@ def verify_local_stt_pack(pack: Mapping[str, Any] | Sequence[Mapping[str, Any]],
     BIN and CTranslate2 directory packs to retain their complete hash.
     """
     if isinstance(pack, Mapping):
+        if set(pack) - _PACK_TOP_LEVEL_KEYS:
+            raise SttCascadeArtifactError("pack contains a non-allowlisted field")
         rows = pack.get("artifacts", pack.get("files"))
         pack_id = pack.get("pack_id", pack_id)
         strategy = pack.get("strategy", strategy)
@@ -644,6 +701,7 @@ def verify_local_stt_pack(pack: Mapping[str, Any] | Sequence[Mapping[str, Any]],
     root_input = Path(os.path.abspath(Path(artifact_root)))
     if root_input.is_symlink() or not root_input.is_dir():
         raise SttCascadeArtifactError("artifact_root must be a regular directory")
+    root_path_seal = _root_path_seal(root_input)
     root = root_input.resolve()
     if root == Path(root.anchor):
         raise SttCascadeArtifactError("filesystem root cannot be an artifact_root")
@@ -659,6 +717,8 @@ def verify_local_stt_pack(pack: Mapping[str, Any] | Sequence[Mapping[str, Any]],
     for row in rows:
         if not isinstance(row, Mapping):
             raise SttCascadeArtifactError("artifact descriptor must be an object")
+        if set(row) - _PACK_ARTIFACT_KEYS:
+            raise SttCascadeArtifactError("artifact descriptor contains a non-allowlisted field")
         artifact_id = row.get("artifact_id", row.get("file_id"))
         if not isinstance(artifact_id, str) or not _SAFE_ID.fullmatch(artifact_id) or artifact_id in artifacts:
             raise SttCascadeArtifactError("artifact_id must be unique and safe")
@@ -712,9 +772,23 @@ def verify_local_stt_pack(pack: Mapping[str, Any] | Sequence[Mapping[str, Any]],
     required = {"engine", "model", "vad", "encoder", "runtime"} if strategy == "whispercpp_openvino" else {"engine", "model", "tokenizer"}
     if not required.issubset(groups):
         raise SttCascadeArtifactError(f"strategy {strategy} is missing required artifact groups")
-    encoded = json.dumps({"pack_id": pack_id, "strategy": strategy, "runtime_abi": runtime_abi, "platform": platform, "artifacts": sorted(identity_rows, key=lambda row: row["artifact_id"])}, sort_keys=True, separators=(",", ":")).encode("ascii")
+    encoded = json.dumps({"pack_id": pack_id, "strategy": strategy, "runtime_abi": runtime_abi, "platform": platform, "artifact_root": str(root), "artifacts": sorted(identity_rows, key=lambda row: row["artifact_id"])}, sort_keys=True, separators=(",", ":")).encode("ascii")
     identity = hashlib.sha256(encoded).hexdigest()
-    return VerifiedLocalSttPack(pack_id, strategy, runtime_abi, platform, artifacts, identity, _token=_PACK_TOKEN)
+    required_groups = tuple(sorted(required))
+    selected = [
+        artifact
+        for group in required_groups
+        for artifact in artifacts.values()
+        if artifact.group == group
+    ]
+    if any(sum(artifact.group == group for artifact in artifacts.values()) != 1 for group in required_groups):
+        raise SttCascadeArtifactError(
+            f"strategy {strategy} requires exactly one artifact for every required group"
+        )
+    canonical_paths = [str(artifact.path.resolve()) for artifact in selected]
+    if len(set(canonical_paths)) != len(canonical_paths):
+        raise SttCascadeArtifactError("required artifact group paths must be distinct")
+    return VerifiedLocalSttPack(pack_id, strategy, runtime_abi, platform, artifacts, identity, root_path_seal, _token=_PACK_TOKEN)
 
 
 __all__ = [

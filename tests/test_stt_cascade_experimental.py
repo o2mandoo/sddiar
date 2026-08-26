@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -72,6 +74,22 @@ class SttCascadeExperimentalTests(unittest.TestCase):
                 "draft_redacted_chars": 100, "refiner_redacted_chars": 1,
             }]))
 
+    def test_oracle_rejects_transcript_text_at_top_level_and_segment(self):
+        payload = metric_payload([{
+            "start_us": 0, "end_us": 10,
+            "draft_error_count": 1, "refiner_error_count": 0,
+            "text": "secret transcript",
+        }])
+        with self.assertRaises(SttCascadeContractError):
+            analyze_stt_cascade_oracle(payload)
+        payload = metric_payload([{
+            "start_us": 0, "end_us": 10,
+            "draft_error_count": 1, "refiner_error_count": 0,
+        }])
+        payload["transcript"] = "secret transcript"
+        with self.assertRaises(SttCascadeContractError):
+            analyze_stt_cascade_oracle(payload)
+
     def test_invalid_segment_contract_fails_closed(self):
         with self.assertRaises(SttCascadeContractError):
             analyze_stt_cascade_oracle(metric_payload([{"start_us": 2, "end_us": 1, "draft_error_count": 1, "refiner_error_count": 1}]))
@@ -122,6 +140,55 @@ class SttCascadeExperimentalTests(unittest.TestCase):
                 verify_local_stt_pack({"pack_id": "fixture", "strategy": "ctranslate2", "runtime_abi": "cp311", "platform": "darwin-arm64", "artifact_root": str(path.parent), "artifacts": [descriptor]})
             with self.assertRaises(SttCascadeArtifactError):
                 verify_local_stt_pack({"pack_id": "fixture", "strategy": "ctranslate2", "runtime_abi": "cp311", "platform": "darwin-arm64", "artifact_root": str(path.parent), "artifacts": [{"artifact_id": "vad", "group": "vad", "path": "https://example.invalid/vad", "sha256": "0" * 64}]})
+
+    def test_pack_rejects_text_fields_and_duplicate_canonical_ct2_paths(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            shared = root / "shared.bin"
+            shared.write_bytes(b"shared")
+            digest = hashlib.sha256(shared.read_bytes()).hexdigest()
+            rows = [
+                {"artifact_id": group, "group": group, "path": shared.name, "sha256": digest, "bytes": shared.stat().st_size}
+                for group in ("engine", "model", "tokenizer")
+            ]
+            with self.assertRaises(SttCascadeArtifactError):
+                verify_local_stt_pack({
+                    "pack_id": "fixture", "strategy": "ctranslate2", "runtime_abi": "cp311",
+                    "platform": "darwin-arm64", "artifact_root": str(root), "artifacts": rows,
+                })
+            rows[0]["text"] = "secret"
+            with self.assertRaises(SttCascadeArtifactError):
+                verify_local_stt_pack({
+                    "pack_id": "fixture", "strategy": "ctranslate2", "runtime_abi": "cp311",
+                    "platform": "darwin-arm64", "artifact_root": str(root), "artifacts": rows,
+                })
+
+    @unittest.skipIf(os.name == "nt", "symlink fixture requires POSIX permissions")
+    def test_pack_rechecks_artifact_root_parent_symlink(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            real_parent = base / "real-parent"
+            real_parent.mkdir()
+            root = real_parent / "pack"
+            root.mkdir()
+            rows = []
+            for artifact_id, group in (("engine", "engine"), ("model", "model"), ("tokenizer", "tokenizer")):
+                path = root / f"{artifact_id}.bin"
+                path.write_bytes(artifact_id.encode())
+                rows.append({"artifact_id": artifact_id, "group": group, "path": path.name, "sha256": hashlib.sha256(path.read_bytes()).hexdigest(), "bytes": path.stat().st_size})
+            link = base / "pack-link"
+            link.symlink_to(real_parent, target_is_directory=True)
+            pack = verify_local_stt_pack({
+                "pack_id": "fixture", "strategy": "ctranslate2", "runtime_abi": "cp311",
+                "platform": "darwin-arm64", "artifact_root": str(link / "pack"), "artifacts": rows,
+            })
+            other_parent = base / "other-parent"
+            other_parent.mkdir()
+            shutil.copytree(root, other_parent / "pack")
+            link.unlink()
+            link.symlink_to(other_parent, target_is_directory=True)
+            with self.assertRaises(SttCascadeArtifactError):
+                pack.assert_artifacts_unchanged()
 
     def test_pack_rejects_artifacts_outside_explicit_root(self):
         with tempfile.TemporaryDirectory() as root_dir, tempfile.TemporaryDirectory() as outside_dir:
