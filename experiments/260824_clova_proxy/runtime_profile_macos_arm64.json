@@ -1,0 +1,78 @@
+{
+  "schema": "sddiar_runtime_profile_v1",
+  "profile_id": "dev-macos-arm64-m5max-ort1290-20260826",
+  "status": "SUPERSEDED_DEVELOPMENT_APPROXIMATION",
+  "superseded_by": "runtime_profile_macos_arm64_kaldi_native.json",
+  "measured_at": "2026-08-26",
+  "platform": {
+    "os": "macOS 26.5.2",
+    "architecture": "arm64",
+    "cpu": "Apple M5 Max",
+    "logical_cpu_count": 18,
+    "physical_memory_gib": 128,
+    "python": "CPython 3.11.15"
+  },
+  "runtime": {
+    "onnxruntime": "1.29.0",
+    "numpy": "2.4.6",
+    "execution_provider": "CPUExecutionProvider",
+    "inter_op_threads": 2,
+    "intra_op_threads": 2,
+    "embedding_batch_regions": 1,
+    "ort_disable_telemetry_environment": true,
+    "production_no_telemetry_build": false
+  },
+  "input": {
+    "audio_sha256_prefix": "d78b53216085",
+    "duration_sec": 3171.732,
+    "sample_rate_hz": 16000,
+    "channel_count": 1,
+    "sample_format": "PCM_S16LE"
+  },
+  "artifacts": {
+    "silero_vad_sha256": "1a153a22f4509e292a94e67d6f9b85e8deb25b4988682b7e174c65279d8788e3",
+    "wespeaker_resnet34_sha256": "9fea6516d7ad6bf0a76c7689f5a49b65d330fad6dde96c91bb4435ffbfe056a1"
+  },
+  "repeat_runs": [
+    {
+      "wall_sec": 49.6105,
+      "rtf": 0.015641,
+      "peak_process_rss_mb": 223.98
+    },
+    {
+      "wall_sec": 48.4746,
+      "rtf": 0.015283,
+      "peak_process_rss_mb": 222.95
+    },
+    {
+      "wall_sec": 48.3207,
+      "rtf": 0.015235,
+      "peak_process_rss_mb": 221.05
+    }
+  ],
+  "summary": {
+    "wall_sec_p50": 48.4746,
+    "wall_sec_p95": 49.49691,
+    "wall_sec_max": 49.6105,
+    "rtf_p50": 0.015283,
+    "rtf_p95": 0.0156052,
+    "rtf_max": 0.015641,
+    "peak_process_rss_mb_p50": 222.95,
+    "peak_process_rss_mb_p95": 223.877,
+    "peak_process_rss_mb_max": 223.98,
+    "deterministic_decision": "H2_CONFIRMED",
+    "deterministic_span_counts": {
+      "SPEAKER_00": 144,
+      "SPEAKER_01": 424,
+      "UNKNOWN": 442,
+      "OVERLAP": 0
+    },
+    "deterministic_metrics": true
+  },
+  "measurement_limits": [
+    "One recording and one high-end Mac were measured; this is not the minimum 8-core/8-GB target profile.",
+    "ru_maxrss is process peak RSS, not sampled process-tree RSS or post-job baseline delta.",
+    "The official ONNX Runtime wheel was used with ORT_DISABLE_TELEMETRY=1 and is not a production-approved no-telemetry build.",
+    "The WeSpeaker feature frontend is a development approximation pending upstream Kaldi FBank parity validation."
+  ]
+}

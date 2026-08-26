@@ -1,0 +1,39 @@
+{
+  "schema": "sddiar_fbank_parity_v1",
+  "status": "PASS_ATOL_3E-4",
+  "measured_at": "2026-08-26",
+  "comparison": {
+    "candidate": "kaldi-native-fbank 1.22.3",
+    "reference": "torchaudio.compliance.kaldi.fbank 2.10.0",
+    "torch": "2.10.0",
+    "settings": "16kHz,80-bin,25ms/10ms,hamming,dither=0,use_energy=false,utterance-CMN",
+    "feature_atol": 0.0003,
+    "feature_rtol": 0.00001
+  },
+  "cases": [
+    {
+      "case": "synthetic_440hz_2s",
+      "native_shape": [198, 80],
+      "reference_shape": [198, 80],
+      "feature_mae": 0.000007772987373755313,
+      "feature_max_abs": 0.000152587890625,
+      "embedding_cosine": 1.0,
+      "pass": true
+    },
+    {
+      "case": "approved_real_segment_2s",
+      "native_shape": [198, 80],
+      "reference_shape": [198, 80],
+      "feature_mae": 0.0000075706025199906435,
+      "feature_max_abs": 0.0002727508544921875,
+      "embedding_cosine": 1.0,
+      "pass": true
+    }
+  ],
+  "privacy": {
+    "source_path_retained": false,
+    "audio_retained": false,
+    "feature_or_embedding_vectors_retained": false
+  },
+  "scope_limit": "Development parity evidence on macOS arm64; target-specific production wheels still require intake and regression."
+}

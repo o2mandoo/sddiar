@@ -1,0 +1,93 @@
+{
+  "schema": "sddiar_one_cpu_runtime_profile_v1",
+  "status": "DEVELOPMENT_PROXY_NOT_XEON_PROOF",
+  "measured_at": "2026-08-26",
+  "quota_environment": {
+    "container_architecture": "linux-arm64",
+    "cgroup_version": "v2",
+    "quota_us": 100000,
+    "period_us": 100000,
+    "effective_cpu_equivalent": 1.0,
+    "visible_logical_cpu_count": 18,
+    "network": "none",
+    "ort_intra_threads": 1,
+    "ort_inter_threads": 1,
+    "native_thread_caps": 1,
+    "memory_limit_mib": 2048
+  },
+  "artifacts": {
+    "sddiar_version": "0.3.0",
+    "sddiar_wheel_sha256": "695e332892fdc16225a924cabde56e58d9de2906bfa95eed2db29f5207fdd631",
+    "container_image_digest": "sha256:65eec8d792bd05d0039c69908bfb301d990cf955bbca62184d25fb4162e2569e",
+    "silero_vad_sha256": "1a153a22f4509e292a94e67d6f9b85e8deb25b4988682b7e174c65279d8788e3",
+    "wespeaker_resnet34_sha256": "9fea6516d7ad6bf0a76c7689f5a49b65d330fad6dde96c91bb4435ffbfe056a1"
+  },
+  "input": {
+    "audio_sha256_prefix": "d78b53216085",
+    "duration_sec": 3171.732,
+    "sample_rate_hz": 16000,
+    "channels": 1,
+    "sample_format": "PCM_S16LE"
+  },
+  "runs": {
+    "pre_optimization_stage_baseline": {
+      "wall_sec": 120.8437,
+      "rtf": 0.0381,
+      "peak_rss_mb": 180.28,
+      "process_cpu_sec": 120.31235,
+      "quota_utilization": 0.996268,
+      "stages_sec": {
+        "vad_decode": 25.289116,
+        "embedding": 88.685317,
+        "hypothesis": 6.316764,
+        "segmentation_tracklets": 0.077061,
+        "finalization_calibration": 0.402698,
+        "evaluation": 0.316736
+      }
+    },
+    "optimized_source_stage_run": {
+      "wall_sec": 85.2102,
+      "rtf": 0.026866,
+      "peak_rss_mb": 154.45,
+      "quota_utilization": 0.994891,
+      "stages_sec": {
+        "vad_decode": 8.179156,
+        "embedding": 73.629407,
+        "hypothesis": 2.866452,
+        "segmentation_tracklets": 0.082036,
+        "finalization_calibration": 0.381779,
+        "evaluation": 0.306417
+      },
+      "quality_equal_to_canonical": true
+    },
+    "installed_wheel_030_canonical": {
+      "wall_sec": 81.9741,
+      "rtf": 0.025845,
+      "peak_rss_mb": 153.75,
+      "projected_3600s_wall_sec": 93.0428,
+      "decision": "H2_CONFIRMED",
+      "span_timeline_sha256": "b81f4fcc5556e1a6e54292d8a139a27ce1b3fe31db2d70c2dcdb29475f2936d3",
+      "canonical_match": true,
+      "output_file_sha256": "9e84875ecf9cbd1faa61199ca1e01f9b5ddbf91da481d99ac8001a42d5b8d0cb"
+    },
+    "temporal_vad_resnet_challenger": {
+      "wall_sec": 91.7233,
+      "rtf": 0.028919,
+      "peak_rss_mb": 154.47,
+      "quality_status": "CHALLENGER_HOLDOUT_WORST_SPEAKER_GATE_FAILED"
+    },
+    "pyannote_fp32_evidence_300s": {
+      "wall_sec": 11.723348,
+      "model_inference_wall_sec": 11.336471,
+      "rtf": 0.039078,
+      "peak_rss_mb": 106.6,
+      "approved_for_tracklet_split": false
+    }
+  },
+  "limits": [
+    "Docker Desktop executes Linux arm64 on Apple hardware; this does not reproduce Intel Xeon Gold 6230R ISA or clock performance.",
+    "The installed wheel run excludes proxy scoring and per-file calibration, matching production diarization-only timing.",
+    "The actual Linux x86_64 cgroup-v1 target must pass scripts/verify_xeon_onecpu_target.py and repeat the full benchmark.",
+    "Official ONNX Runtime development wheels are not the required production no-telemetry build."
+  ]
+}

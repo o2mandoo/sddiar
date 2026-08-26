@@ -1,0 +1,1 @@
+{"cluster_accuracy": 0.5528846153846154, "cluster_count": 2, "pairwise_precision": 0.5013426559254193, "pairwise_recall": 0.9206363974692966, "result_kind": "ORACLE_BOUNDARY_PROXY", "turns": 208}

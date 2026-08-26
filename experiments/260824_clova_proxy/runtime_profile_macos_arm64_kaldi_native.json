@@ -1,0 +1,89 @@
+{
+  "schema": "sddiar_runtime_profile_v1",
+  "profile_id": "dev-macos-arm64-m5max-ort1290-knf1223-20260826",
+  "status": "DEVELOPMENT_ONLY",
+  "measured_at": "2026-08-26",
+  "platform": {
+    "os": "macOS 26.5.2",
+    "architecture": "arm64",
+    "cpu": "Apple M5 Max",
+    "logical_cpu_count": 18,
+    "physical_memory_gib": 128,
+    "python": "CPython 3.11.15"
+  },
+  "runtime": {
+    "sddiar": "0.2.0",
+    "onnxruntime": "1.29.0",
+    "numpy": "2.4.6",
+    "kaldi_native_fbank": "1.22.3",
+    "feature_frontend": "wespeaker-kaldi-native-fbank",
+    "execution_provider": "CPUExecutionProvider",
+    "intra_op_threads": 2,
+    "inter_op_threads": 1,
+    "embedding_batch_regions": 1,
+    "max_tracklet_sec": 3.0,
+    "subsegment_windows": false,
+    "assignment_distance_limit": 0.5,
+    "ort_disable_telemetry_environment": true,
+    "production_no_telemetry_build": false
+  },
+  "input": {
+    "audio_sha256_prefix": "d78b53216085",
+    "duration_sec": 3171.732,
+    "sample_rate_hz": 16000,
+    "channel_count": 1,
+    "sample_format": "PCM_S16LE"
+  },
+  "artifacts": {
+    "sddiar_wheel_sha256": "0facf6a912f479ece70745d80353c7b3a51cc1cb227ab672b8ab6c324f0b1bef",
+    "silero_vad_sha256": "1a153a22f4509e292a94e67d6f9b85e8deb25b4988682b7e174c65279d8788e3",
+    "wespeaker_resnet34_sha256": "9fea6516d7ad6bf0a76c7689f5a49b65d330fad6dde96c91bb4435ffbfe056a1",
+    "kaldi_native_fbank_wheel_sha256": "29452f2900e771086e9022dde17a92d191217ab3e34ca7dc361bd9be53e94fb4"
+  },
+  "repeat_runs": [
+    {
+      "harness": "experiment_runner",
+      "wall_sec": 50.5602,
+      "rtf": 0.015941,
+      "peak_process_rss_mb": 218.62
+    },
+    {
+      "harness": "source_cli",
+      "wall_sec": 49.2231,
+      "rtf": 0.015519,
+      "peak_process_rss_mb": 220.02
+    },
+    {
+      "harness": "isolated_wheel_cli",
+      "wall_sec": 51.4289,
+      "rtf": 0.016215,
+      "peak_process_rss_mb": 218.61
+    }
+  ],
+  "summary": {
+    "wall_sec_p50": 50.5602,
+    "wall_sec_p95": 51.34203,
+    "wall_sec_max": 51.4289,
+    "rtf_p50": 0.015941,
+    "rtf_p95": 0.0161876,
+    "rtf_max": 0.016215,
+    "peak_process_rss_mb_p50": 218.62,
+    "peak_process_rss_mb_p95": 219.88,
+    "peak_process_rss_mb_max": 220.02,
+    "deterministic_decision": "H2_CONFIRMED",
+    "deterministic_span_counts": {
+      "SPEAKER_00": 150,
+      "SPEAKER_01": 420,
+      "UNKNOWN": 439,
+      "OVERLAP": 0
+    },
+    "deterministic_metrics": true
+  },
+  "measurement_limits": [
+    "One recording and one high-end Mac were measured; this is not the minimum 8-core/8-GB target profile.",
+    "The three runs used equivalent algorithms but different source/experiment/isolated-wheel harnesses.",
+    "ru_maxrss is process peak RSS, not sampled process-tree RSS or post-job baseline delta.",
+    "The official ONNX Runtime wheel was used with ORT_DISABLE_TELEMETRY=1 and is not a production-approved no-telemetry build.",
+    "The 0.5 assignment distance is a same-recording Clova proxy choice, not a signed release calibration."
+  ]
+}

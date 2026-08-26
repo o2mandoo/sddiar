@@ -1,0 +1,16 @@
+{
+  "result_kind": "ORACLE_BOUNDARY_H1_H2_PROXY",
+  "decision_state": "H1_CONFIRMED",
+  "reason_codes": [],
+  "turns": 208,
+  "k": 1,
+  "robust_cost": 4.9313967909115115e-05,
+  "total_cost": 4.9313967909115115e-05,
+  "separation": null,
+  "label_stability": null,
+  "centroid_stability": null,
+  "temporal_interleaving": null,
+  "cluster_support_ok": true,
+  "dispersion_ok": true,
+  "outlier_ratio_ok": true
+}

@@ -1,0 +1,11 @@
+{
+  "result_kind": "NON_ORACLE_ENERGY_BASELINE",
+  "reference_kind": "CLOVA_SPEAKER_TIMESTAMP_PROXY",
+  "turn_count": 208,
+  "turn_coverage": 0.9567307692307693,
+  "turn_accuracy_given_covered": 0.5527638190954773,
+  "time_coverage": 0.5083569851781772,
+  "time_accuracy_end_to_end": 0.3576158940397351,
+  "time_accuracy_given_predicted_speech": 0.7034739454094293,
+  "unknown_rate": 0.4917603378847898
+}

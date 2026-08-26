@@ -1,0 +1,19 @@
+{
+  "baseline": "NON_ORACLE_ENERGY_BASELINE",
+  "sample_rate_hz": 16000,
+  "window_ms": 500,
+  "hop_ms": 500,
+  "window_count": 6344,
+  "coverage": 0.5082396621152102,
+  "unknown_rate": 0.4917603378847898,
+  "score": {
+    "baseline": "NON_ORACLE_ENERGY_BASELINE",
+    "coverage": 0.5083569851781772,
+    "speaker_mapped_frame_accuracy": 0.3576158940397351,
+    "unknown_rate": 0.4917603378847898,
+    "mapping": {
+      "H1": "REF_01",
+      "H2": "REF_00"
+    }
+  }
+}
