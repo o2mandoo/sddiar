@@ -567,6 +567,23 @@ def _largest_memory_bytes(snapshot: Mapping[str, Any]) -> int | None:
     return max(valid) if valid else None
 
 
+def _resident_memory_bytes(snapshot: Mapping[str, Any]) -> int | None:
+    """Return current resident memory, excluding cumulative high-water marks.
+
+    ``memory.peak``, ``VmHWM``, and ``ru_maxrss`` are appropriate for the hard
+    peak cap, but they are monotonic high-water counters and cannot measure a
+    warm-baseline leak.  The warm-growth gate therefore uses only current
+    process-tree/cgroup resident observations.
+    """
+
+    values = [snapshot.get(key) for key in (
+        "process_tree_rss_bytes", "process_tree_pss_bytes", "current_bytes",
+        "Rss_bytes", "Pss_bytes", "VmRSS_bytes",
+    )]
+    valid = [int(value) for value in values if isinstance(value, (int, float)) and value >= 0]
+    return max(valid) if valid else None
+
+
 def _nonnegative_delta(before: Mapping[str, Any], after: Mapping[str, Any], key: str) -> int | None:
     left, right = before.get(key), after.get(key)
     if not isinstance(left, (int, float)) or not isinstance(right, (int, float)) or right < left:
@@ -650,6 +667,7 @@ def run_repeated_worker(
     runs: list[dict[str, Any]] = []
     fallback_seen = _fallback_detected(diarizer, None)
     warm_baseline_resources: dict[str, Any] | None = None
+    warm_resident_growth_percent_max = 0.0
 
     for iteration in range(repetitions):
         for input_index, audio_path in enumerate(paths):
@@ -754,10 +772,13 @@ def run_repeated_worker(
             if warm_baseline_resources is None:
                 warm_baseline_resources = dict(post)
             elif warm_rss_growth_limit_percent is not None:
-                warm_base = _largest_memory_bytes(warm_baseline_resources)
-                warm_now = _largest_memory_bytes(post)
+                warm_base = _resident_memory_bytes(warm_baseline_resources)
+                warm_now = _resident_memory_bytes(post)
                 if warm_base and warm_now is not None:
                     warm_growth_percent = max(0.0, (warm_now - warm_base) * 100.0 / warm_base)
+                    warm_resident_growth_percent_max = max(
+                        warm_resident_growth_percent_max, warm_growth_percent
+                    )
                     if warm_growth_percent > warm_rss_growth_limit_percent:
                         raise RssGrowthError("warm process-tree/cgroup memory growth exceeded configured percent")
 
@@ -795,6 +816,9 @@ def run_repeated_worker(
                          "warm_rss_growth_limit_percent": warm_rss_growth_limit_percent,
                          "baseline": baseline_resources, "final": final_resources,
                          "warm_baseline": warm_baseline_resources,
+                         "warm_resident_growth_percent_max": round(
+                             warm_resident_growth_percent_max, 6
+                         ),
                          "max_growth_bytes": max((r["resources"]["growth_bytes"] or 0) for r in runs)},
         "runs": runs,
         "redaction": {"source_identifiers": "omitted", "raw_content": "omitted"},

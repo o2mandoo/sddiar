@@ -126,6 +126,7 @@ class RepeatedWorkerTests(unittest.TestCase):
         self.assertEqual(payload["run_count"], 2)
         self.assertEqual(payload["runs"][0]["timeline_digest"], payload["runs"][1]["timeline_digest"])
         self.assertEqual(payload["runs"][0]["cpu"]["usage_usec"], 10)
+        self.assertEqual(payload["memory_gate"]["warm_resident_growth_percent_max"], 0.0)
         serialized = json.dumps(payload, sort_keys=True)
         self.assertNotIn("/private/input/audio.wav", serialized)
         self.assertNotIn('"spans"', serialized)
@@ -221,6 +222,27 @@ class RepeatedWorkerTests(unittest.TestCase):
                 clock=clock, process_clock=clock, gc_collect=lambda: 0,
                 gc_counts=lambda: (0, 0, 0), max_rtf=0.001,
             )
+
+    def test_warm_growth_excludes_cumulative_peak_counters(self):
+        first = {
+            "process_tree_rss_bytes": 100,
+            "process_tree_pss_bytes": 90,
+            "current_bytes": 95,
+            "peak_bytes": 120,
+            "VmHWM_bytes": 118,
+            "ru_maxrss_bytes": 119,
+        }
+        second = {
+            "process_tree_rss_bytes": 105,
+            "process_tree_pss_bytes": 94,
+            "current_bytes": 101,
+            "peak_bytes": 200,
+            "VmHWM_bytes": 190,
+            "ru_maxrss_bytes": 195,
+        }
+        self.assertEqual(worker._resident_memory_bytes(first), 100)
+        self.assertEqual(worker._resident_memory_bytes(second), 105)
+        self.assertEqual(worker._largest_memory_bytes(second), 200)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,85 @@
+{
+  "schema_version": "1.0",
+  "kind": "sddiar-0.4.0-persistent-one-cpu-development-evidence",
+  "recorded_date": "2026-08-26",
+  "production_approved": false,
+  "scope": {
+    "platform": "linux-arm64-docker-on-apple-silicon",
+    "cgroup_version": "v2",
+    "cpu_equivalent": 1.0,
+    "memory_limit_mib": 256,
+    "network": "none",
+    "root_filesystem": "read-only",
+    "xeon_evidence": false
+  },
+  "artifacts": {
+    "sddiar_version": "0.4.0",
+    "wheel_sha256": "5cd27e1387806c0af763978100aa51a4cde15a40b2b1b8645df1ee24417cad87",
+    "container_image_digest": "sha256:bd7f67a7f0a4fb951a64aab21086b0590e4d4212ae771a45f6f47ebffca47a38",
+    "base_image_digest": "sha256:d29f48a31a8b408ed19272ca1e7b10ebae13b240a27e862d3d4217c528e2e0c3",
+    "full_report_sha256": "603fdceb582cc9e6ef58d09534dfdb963465032bd0de442391414fed39695265"
+  },
+  "input": {
+    "duration_us_per_pass": 3171732000,
+    "processed_audio_us": 6343464000,
+    "passes": 2,
+    "audio_retained": false,
+    "source_path_retained": false
+  },
+  "determinism": {
+    "decision": "H2_CONFIRMED",
+    "timeline_sha256": "17916f963c7d65fa628c4c29cf949382586325784b18155e885bda8250c526e8",
+    "cold_warm_exact_match": true,
+    "matches_0_3_canonical_under_same_digest_function": true,
+    "fallback_count": 0,
+    "oom_count": 0
+  },
+  "performance": {
+    "cold": {
+      "wall_seconds": 84.595894,
+      "rtf": 0.026672,
+      "throttled_wall_ratio": 0.00028808,
+      "process_tree_rss_bytes": 160452608,
+      "process_tree_pss_bytes": 160448512
+    },
+    "warm": {
+      "wall_seconds": 86.534800,
+      "rtf": 0.027283,
+      "throttled_wall_ratio": 0.00036249,
+      "process_tree_rss_bytes": 165064704,
+      "process_tree_pss_bytes": 165060608
+    },
+    "warm_resident_growth_percent": 2.874429,
+    "max_growth_bytes_from_pre_inference_baseline": 57507840,
+    "cgroup_peak_bytes": 261218304,
+    "cgroup_peak_mib": 249.117188,
+    "memory_headroom_to_256_mib": 7217152
+  },
+  "gates": {
+    "max_rtf": 0.35,
+    "max_throttled_wall_ratio": 0.01,
+    "max_memory_mib": 256,
+    "max_growth_mib": 64,
+    "max_warm_resident_growth_percent": 10,
+    "strict_result": "PASS"
+  },
+  "validator_correction": {
+    "initial_result": "FALSE_FAILURE",
+    "cause": "cumulative_cgroup_memory_peak_was_misused_as_current_warm_resident_memory",
+    "fix": "warm_growth_uses_process_tree_rss_pss_and_cgroup_current_only; peak_remains_in_hard_cap",
+    "regression_test_added": true
+  },
+  "limitations": [
+    "not_the_intel_xeon_target",
+    "cgroup_v2_not_target_cgroup_v1",
+    "only_two_passes_not_release_p95",
+    "official_onnxruntime_wheel_is_not_the_audited_no_telemetry_build",
+    "dedicated_worker_required_because_memory_headroom_is_small"
+  ],
+  "privacy": {
+    "audio": "omitted",
+    "transcript": "omitted",
+    "paths": "omitted",
+    "raw_spans": "omitted"
+  }
+}
