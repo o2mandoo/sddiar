@@ -31,6 +31,7 @@ from sddiar.diarization import (  # noqa: E402
     refine_recent_states, select_anchor_evidence, speaker_states_from_decision,
 )
 from sddiar.graph_rescue_experimental import (  # noqa: E402
+    GRAPH_RESCUE_ALGORITHM_VERSION,
     GraphRescueConfig,
     build_redacted_receipt,
     rescue_unknowns,
@@ -503,6 +504,7 @@ def _graph_rescue_report(
     receipt["seed_mode"] = graph_result.diagnostics.get("seed_eligibility", {}).get("mode", "ANCHOR_ONLY")
     receipt["parity_passed"] = parity["passed"]
     policy = {
+        "algorithm_version": GRAPH_RESCUE_ALGORITHM_VERSION,
         "adjacency_mode": config.adjacency_mode,
         "k_neighbors": config.k_neighbors,
         "propagation_steps": config.propagation_steps,

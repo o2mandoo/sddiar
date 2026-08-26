@@ -15,6 +15,7 @@ pure-Python fallback is used for small fixtures.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from itertools import islice
 from math import exp, isfinite, sqrt
 from hashlib import sha256
 from types import MappingProxyType
@@ -22,6 +23,9 @@ from typing import Any, Mapping, Sequence
 
 
 SPEAKER_IDS = ("SPEAKER_00", "SPEAKER_01")
+GRAPH_RESCUE_ALGORITHM_VERSION = "anchor-clamped-fixedpoint-v2"
+_VECTOR_SCALE = 1_000_000
+_DOT_SCALE = _VECTOR_SCALE * _VECTOR_SCALE
 ALLOWED_LABELS = frozenset((*SPEAKER_IDS, "UNKNOWN", "OVERLAP", "OTHER", "NON_SPEECH"))
 DECISION_STATES = frozenset(("H1_CONFIRMED", "H2_CONFIRMED", "UNCERTAIN_1_OR_2"))
 
@@ -144,13 +148,19 @@ def _normalise(vector: Any, max_dimension: int) -> tuple[float, ...] | None:
         return None
     if isinstance(vector, Mapping):
         vector = vector.get("vector")
-    try:
-        values = tuple(float(item) for item in vector)
-    except (TypeError, ValueError):
+    if isinstance(vector, (str, bytes, bytearray)):
         return None
-    if not values or len(values) > max_dimension or not all(isfinite(item) for item in values):
-        if len(values) > max_dimension:
-            raise GraphRescueResourceError("embedding dimension exceeds max_dimension")
+    try:
+        raw_values = tuple(islice(iter(vector), max_dimension + 1))
+    except TypeError:
+        return None
+    if len(raw_values) > max_dimension:
+        raise GraphRescueResourceError("embedding dimension exceeds max_dimension")
+    try:
+        values = tuple(float(item) for item in raw_values)
+    except (TypeError, ValueError, OverflowError):
+        return None
+    if not values or not all(isfinite(item) for item in values):
         return None
     norm = sqrt(sum(item * item for item in values))
     if norm <= 1e-12:
@@ -202,8 +212,16 @@ def _resolve_decision(
     return state, (h2_confirmed if h2_confirmed is not None else state == "H2_CONFIRMED")
 
 
-def _distance(left: Sequence[float], right: Sequence[float]) -> float:
-    return 1.0 - sum(a * b for a, b in zip(left, right))
+def _quantize_vector(vector: Sequence[float]) -> tuple[int, ...]:
+    """Convert a normalized vector to a cross-backend fixed-point form."""
+
+    return tuple(int(round(float(value) * _VECTOR_SCALE)) for value in vector)
+
+
+def _distance_score(left: Sequence[int], right: Sequence[int]) -> int:
+    """Return deterministic fixed-point cosine-distance numerator."""
+
+    return max(0, _DOT_SCALE - sum(a * b for a, b in zip(left, right)))
 
 
 def _numpy_module() -> Any:
@@ -269,21 +287,24 @@ def _build_adjacency(
     if evaluations > cfg.max_distance_evaluations:
         raise GraphRescueResourceError("distance evaluation budget exceeded")
     numpy = _numpy_module() if use_numpy is not False else None
+    quantized = {node: _quantize_vector(vectors[node]) for node in node_ids}
+    edge_distance_limit = int(round(cfg.max_edge_distance * _DOT_SCALE))
     directed: dict[str, tuple[str, ...]] = {}
     if numpy is not None:
         # Keep the NxN distance matrix out of memory.  A float64 chunk for
         # 128x1200 is about 1.2 MiB; only the chunk and the transposed vector
         # matrix are live at once.  Sorting remains Python-side so ties have
         # exactly the same stable (distance, tracklet_id) order as fallback.
-        matrix = numpy.asarray([vectors[node] for node in node_ids], dtype=numpy.float64)
+        matrix = numpy.asarray([quantized[node] for node in node_ids], dtype=numpy.int64)
         for start in range(0, n, cfg.distance_chunk_nodes):
             stop = min(n, start + cfg.distance_chunk_nodes)
-            distances = 1.0 - matrix[start:stop].dot(matrix.T)
+            similarities = matrix[start:stop].dot(matrix.T)
             for offset, left in enumerate(node_ids[start:stop]):
                 nearest = [
-                    (float(distances[offset, index]), node_ids[index])
+                    (max(0, _DOT_SCALE - int(similarities[offset, index])), node_ids[index])
                     for index in range(n)
-                    if index != start + offset and distances[offset, index] <= cfg.max_edge_distance
+                    if index != start + offset
+                    and max(0, _DOT_SCALE - int(similarities[offset, index])) <= edge_distance_limit
                 ]
                 nearest.sort(key=lambda item: (item[0], item[1]))
                 directed[left] = tuple(right for _, right in nearest[: cfg.k_neighbors])
@@ -294,9 +315,9 @@ def _build_adjacency(
             for right in node_ids:
                 if left == right:
                     continue
-                distance = _distance(vectors[left], vectors[right])
-                if distance <= cfg.max_edge_distance:
-                    nearest.append((distance, right))
+                distance_score = _distance_score(quantized[left], quantized[right])
+                if distance_score <= edge_distance_limit:
+                    nearest.append((distance_score, right))
             nearest.sort(key=lambda item: (item[0], item[1]))
             directed[left] = tuple(right for _, right in nearest[: cfg.k_neighbors])
 
@@ -305,7 +326,8 @@ def _build_adjacency(
         for right in directed[left]:
             if cfg.adjacency_mode == "mutual_knn" and left not in directed[right]:
                 continue
-            distance = _distance(vectors[left], vectors[right])
+            distance_score = _distance_score(quantized[left], quantized[right])
+            distance = distance_score / _DOT_SCALE
             weight = exp(-max(0.0, distance) / cfg.posterior_temperature)
             adjacency[left].append((right, weight))
     edge_count = sum(len(items) for items in adjacency.values())
@@ -373,6 +395,8 @@ def rescue_unknowns(
     """
 
     cfg = config or GraphRescueConfig()
+    if len(tracklets) > cfg.max_nodes or len(baseline_labels) > cfg.max_nodes:
+        raise GraphRescueResourceError("tracklet or label count exceeds max_nodes")
     original_labels = tuple(baseline_labels)
     if any(not isinstance(label, str) or label not in ALLOWED_LABELS for label in original_labels):
         raise GraphRescueError("baseline_labels contains an unsupported label")
@@ -384,6 +408,8 @@ def rescue_unknowns(
     state, h2 = _resolve_decision(decision, decision_state, h2_confirmed)
     explicit_seed_ids: frozenset[str] | None = None
     if seed_tracklet_ids is not None:
+        if len(seed_tracklet_ids) > cfg.max_nodes:
+            raise GraphRescueResourceError("seed tracklet count exceeds max_nodes")
         requested = tuple(seed_tracklet_ids)
         if any(not isinstance(item, str) or not item for item in requested):
             raise GraphRescueError("seed_tracklet_ids must contain non-empty strings")
@@ -420,12 +446,11 @@ def rescue_unknowns(
     if not cfg.enabled or not h2:
         base_diagnostics["skip_reason"] = "DISABLED" if not cfg.enabled else "H2_REQUIRED"
         return GraphRescueResult(original_labels, (), 0, _freeze(base_diagnostics))
-    if len(tracklets) > cfg.max_nodes:
-        raise GraphRescueResourceError("tracklet count exceeds max_nodes")
-
     if isinstance(embeddings, Mapping):
-        by_id = dict(embeddings)
+        by_id = embeddings
     else:
+        if len(embeddings) > cfg.max_nodes:
+            raise GraphRescueResourceError("embedding count exceeds max_nodes")
         by_id = {}
         for value in embeddings:
             item_id = _get(value, "tracklet_id", None)
@@ -473,6 +498,12 @@ def rescue_unknowns(
         "excluded_assigned_count": excluded_assigned_count,
         "explicit_requested_count": len(explicit_seed_ids or ()),
     }
+    if speaker_labels != set(SPEAKER_IDS) or any(
+        not any(label == speaker and item_id in seed_ids for item_id, label in zip(ids, original_labels))
+        for speaker in SPEAKER_IDS
+    ):
+        base_diagnostics["skip_reason"] = "TWO_SEED_CLASSES_REQUIRED"
+        return GraphRescueResult(original_labels, (), 0, _freeze(base_diagnostics))
     if not unknown_ids or not anchor_ids or not speaker_labels:
         base_diagnostics["skip_reason"] = "NO_VALID_UNKNOWN_OR_ANCHOR"
         return GraphRescueResult(original_labels, (), 0, _freeze(base_diagnostics))
@@ -594,6 +625,7 @@ def build_redacted_receipt(result: GraphRescueResult) -> Mapping[str, Any]:
     diagnostics = result.diagnostics
     receipt = {
         "schema": "graph_rescue_redacted_receipt_v1",
+        "algorithm_version": GRAPH_RESCUE_ALGORITHM_VERSION,
         "candidate_count": len(result.candidates),
         "applied_count": result.applied_count,
         "candidate_speaker_counts": speaker_counts,
@@ -616,7 +648,7 @@ redacted_receipt = build_redacted_receipt
 
 
 __all__ = [
-    "GraphRescueConfig", "GraphRescueCandidate", "GraphRescueResult",
+    "GRAPH_RESCUE_ALGORITHM_VERSION", "GraphRescueConfig", "GraphRescueCandidate", "GraphRescueResult",
     "GraphRescueError", "GraphRescueResourceError", "rescue_unknowns",
     "propagate_unknowns", "graph_rescue", "build_redacted_receipt",
     "redacted_receipt",

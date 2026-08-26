@@ -137,6 +137,39 @@ class GraphRescueExperimentalTests(unittest.TestCase):
                             decision=SimpleNamespace(state="H1_CONFIRMED"),
                             h2_confirmed=True, config=self.config)
 
+    def test_h2_requires_both_seed_speaker_classes(self):
+        one_class = tuple("SPEAKER_00" if label != "UNKNOWN" else label for label in self.labels)
+        result = rescue_unknowns(
+            self.tracklets, one_class, self.embeddings,
+            decision_state="H2_CONFIRMED", config=self.config,
+        )
+        self.assertEqual(result.labels, one_class)
+        self.assertEqual(result.diagnostics["skip_reason"], "TWO_SEED_CLASSES_REQUIRED")
+
+    def test_resource_bounds_apply_before_copying_embeddings_or_vectors(self):
+        class CountingMapping(dict):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.iterated = False
+
+            def __iter__(self):
+                self.iterated = True
+                return super().__iter__()
+
+        mapping = CountingMapping(self.embeddings)
+        rescue_unknowns(
+            self.tracklets, self.labels, mapping,
+            decision_state="H2_CONFIRMED", config=self.config,
+        )
+        self.assertFalse(mapping.iterated)
+        oversized = dict(self.embeddings)
+        oversized["u"] = (value for value in range(self.config.max_dimension + 1))
+        with self.assertRaises(GraphRescueResourceError):
+            rescue_unknowns(
+                self.tracklets, self.labels, oversized,
+                decision_state="H2_CONFIRMED", config=self.config,
+            )
+
     def test_diagnostics_are_deep_immutable_and_receipt_is_redacted(self):
         result = rescue_unknowns(
             self.tracklets, self.labels, self.embeddings,
@@ -162,6 +195,21 @@ class GraphRescueExperimentalTests(unittest.TestCase):
             "u": tuple(np.asarray((0.995, 0.05, 0.0))),
         }
         cfg = GraphRescueConfig(enabled=True, k_neighbors=2, max_edge_distance=0.8)
+        python_graph = _build_adjacency(tuple(vectors), vectors, cfg, use_numpy=False)
+        numpy_graph = _build_adjacency(tuple(vectors), vectors, cfg, use_numpy=True)
+        self.assertEqual(python_graph, numpy_graph)
+
+    def test_near_threshold_256d_topology_is_backend_identical(self):
+        try:
+            import numpy as np
+        except ImportError:
+            self.skipTest("optional NumPy is not installed")
+        rng = np.random.default_rng(77)
+        matrix = rng.normal(size=(12, 256))
+        matrix /= np.linalg.norm(matrix, axis=1, keepdims=True)
+        vectors = {f"v-{index}": tuple(row) for index, row in enumerate(matrix)}
+        threshold = 1.0 - sum(a * b for a, b in zip(vectors["v-0"], vectors["v-1"]))
+        cfg = GraphRescueConfig(enabled=True, k_neighbors=6, max_edge_distance=threshold)
         python_graph = _build_adjacency(tuple(vectors), vectors, cfg, use_numpy=False)
         numpy_graph = _build_adjacency(tuple(vectors), vectors, cfg, use_numpy=True)
         self.assertEqual(python_graph, numpy_graph)

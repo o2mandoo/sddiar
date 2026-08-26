@@ -77,6 +77,7 @@ class GraphRescueIntegrationTests(unittest.TestCase):
         self.assertEqual(report["candidate_count"], 1)
         self.assertEqual(report["rescued_duration_us"], 1_000_000)
         self.assertEqual(report["changed_existing_assigned_us"], 0)
+        self.assertIn("algorithm_version", report["policy"])
         self.assertTrue(report["graph_diagnostics_redacted"]["parity_passed"])
         self.assertNotIn("tracklet_id", str(report))
         self.assertNotIn("block-a", str(report))
