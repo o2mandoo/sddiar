@@ -1,7 +1,7 @@
 {
   "schema": "sddiar.graph_rescue_experiment_evidence_v1",
   "recorded_date": "2026-08-26",
-  "source_commit": "1669afff952f56336bb957b3820a0a63bc66b019",
+  "source_commit": "1f676015f32f9771d1765b6372436e5a12305803",
   "experimental": true,
   "default_enabled": false,
   "production_approved": false,
@@ -27,6 +27,7 @@
     "target_xeon_evidence": false
   },
   "fixed_graph_policy": {
+    "algorithm_version": "anchor-clamped-fixedpoint-v2",
     "adjacency_mode": "bounded_knn",
     "k_neighbors": 8,
     "propagation_steps": 1,
@@ -36,17 +37,17 @@
     "posterior_margin_min": 0.15,
     "leave_block_margin_min": 0.05,
     "max_edge_distance": 0.75,
-    "policy_sha256": "d41dedfc6ae5d7bf490d65856d0dfbc473813f374bea8442060f3715f8a00d22"
+    "policy_sha256": "5aaba165f660355473559823b43ef116856a9da25055e11dd91114535c8b6b8c"
   },
   "primary_strict_upstream_run": {
     "candidate_computation_reference_usage": "none",
     "reference_usage": "posthoc_proxy_scoring_only",
     "upstream_assignment_calibration": false,
     "runtime": {
-      "total_wall_seconds": 31.5195,
-      "total_rtf": 0.009938,
-      "graph_and_proxy_scoring_wall_seconds": 0.315473,
-      "peak_rss_mib": 211.45,
+      "total_wall_seconds": 31.7169,
+      "total_rtf": 0.01,
+      "graph_and_proxy_scoring_wall_seconds": 0.480896,
+      "peak_rss_mib": 218.72,
       "node_count": 929,
       "edge_count": 7423,
       "distance_evaluations": 862112
@@ -81,39 +82,6 @@
       "candidate_identity_digest": "9feeb1c41d1564d916bd478f97ac5720dc5f339dba600f2430990ac6a479aabc"
     }
   },
-  "secondary_reference_calibrated_upstream_run": {
-    "candidate_computation_reference_usage": "indirect_via_upstream_assignment_profile",
-    "reference_usage": "upstream_60_percent_calibration_and_full_recording_posthoc_scoring",
-    "upstream_assignment_calibration": true,
-    "runtime": {
-      "total_wall_seconds": 30.6389,
-      "total_rtf": 0.00966,
-      "graph_and_proxy_scoring_wall_seconds": 0.283907,
-      "peak_rss_mib": 213.59,
-      "node_count": 798,
-      "edge_count": 6374,
-      "distance_evaluations": 636006
-    },
-    "baseline": {
-      "reference_timeline_coverage": 0.404319142226427,
-      "speaker_accuracy_given_assigned": 0.9896107623766083,
-      "turn_coverage": 0.7692307692307693,
-      "turn_accuracy_given_covered": 0.925,
-      "worst_speaker_accuracy_given_assigned": 0.9549608727937396
-    },
-    "candidate": {
-      "candidate_count": 186,
-      "rescued_duration_us": 135360000,
-      "changed_existing_assigned_us": 0,
-      "reference_timeline_coverage": 0.4470059918006938,
-      "speaker_accuracy_given_assigned": 0.9793714937183235,
-      "turn_coverage": 0.8798076923076923,
-      "turn_accuracy_given_covered": 0.9453551912568307,
-      "worst_speaker_accuracy_given_assigned": 0.9378846987429562,
-      "newly_rescued_proxy_precision": 0.8823877068557919,
-      "candidate_identity_digest": "024d3403f16d098bb8484f38102caa117e56eb412308964ba52fb61871ee8acd"
-    }
-  },
   "gates_on_primary_run": {
     "existing_assigned_exact_parity": true,
     "complete_merge_zero": true,
@@ -127,7 +95,6 @@
   "limitations": [
     "single_recording_clova_timing_proxy_is_not_der_or_release_ground_truth",
     "host_run_is_not_xeon_cgroup_v1_evidence",
-    "secondary_run_depends_on_same_recording_upstream_calibration",
     "candidate_must_remain_default_off",
     "same_recording_threshold_retuning_is_prohibited"
   ],
