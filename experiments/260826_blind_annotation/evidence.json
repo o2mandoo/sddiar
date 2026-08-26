@@ -1,9 +1,9 @@
 {
   "schema": "sddiar.blind_annotation_pack_evidence_v1",
   "recorded_date": "2026-08-26",
-  "builder_source_commit": "4378618756e457cbb5a7f067c910aed394a209bb",
+  "builder_source_commit": "e28d2eff1bcf1124231001a1dee263dedc8f858e",
   "pack_schema": "sddiar-blind-annotation/v2",
-  "manifest_sha256": "9598b27fb85c5ea1e584a85287328e3850545d8daa5d4ce18a99bb24fc42df2d",
+  "manifest_sha256": "93170c924c7e15d6153cfb2c4bf74cfba4b3055c033c64ba542178b8243d0158",
   "annotator_manifest_sha256": "3d46ec76352608103448709015741925b4644363138f39af00e64c666b5980a5",
   "label_template_sha256": "3268302f0fe168c401252adecff380bbdf7cd311cf365b59c0358d527da44473",
   "clip_count": 48,
@@ -17,6 +17,12 @@
   "qc_duplicate_audio_count": 0,
   "second_annotator_slot_count": 12,
   "strict_pack_verification": "PASS",
+  "selection_provenance": {
+    "speaker_identity_used": false,
+    "system_status_markers_used": true,
+    "transcript_text_used": false,
+    "selection_inputs_are_source_time_and_status_only": true
+  },
   "private_permissions": {
     "directories": "0700",
     "files": "0600"
