@@ -83,6 +83,7 @@ artifacts/**/tooling/wheels/
 
 # Blind annotation packs contain private source clips and human labels.
 /.private/blind-annotation/
+/.private/korean-evaluation/
 
 # User-provided source transcript at the repository root.
 /*.txt

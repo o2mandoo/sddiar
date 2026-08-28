@@ -55,6 +55,8 @@
 - additive edit-count STT cascade oracle와 strategy-aware bounded artifact pack; 검증된 isolated runtime 부재로 CT2 executable backend는 미포함
 - 0.5.0 source/wheel candidate: gain v2, BM-RCM, SCD/OSD shadow, blind pack과 falsey boundary iterable 차단 포함
 - turbo Q5 60초 VAD A/B: wall 31.17% 단축, CER/turn-aligned CER 악화로 default-off 유지; OpenVINO는 verified x86 pack 부재로 미실행
+- 한국어 공개 평가 v1: GOLD/SILVER/CHALLENGE corpus lock, NIKL JSON→RTTM/UEM adapter, speaker-level split guard, hash-bound prediction runner, DER/JER/SCD/OSD/subgroup/bootstrap receipt
+- 0.6.0 source/wheel candidate: 한국어 공개 평가, strict/collar 이중 DER, metrics-only 외부 승인 경계, sweep-line scorer 및 bounded intake 포함
 
 ## production 전 아직 필요한 항목
 
@@ -71,6 +73,7 @@
 - Windows blind-pack owner-only DACL 생성·검증 backend; 구현 전에는 해당 기능만 fail-closed
 - SCD 11개 model candidate의 좌우 WeSpeaker probe shadow 실행과 independent SCD/OSD score
 - CT2/OpenVINO용 verified isolated interpreter/worker/model snapshot과 실제 Xeon 실행
+- 국립국어원 지역어 말뭉치 이용 승인·반입, 290쌍 hash inventory와 시간축/UEM/overlap 수동 감사
 
 ## 다음 구현 gate
 
@@ -91,11 +94,18 @@
 
 ## 실행 검증
 
-2026-08-26 기준 0.5.0 source candidate의 CPython 3.11 개발 runtime unittest 359개가 전부 통과했다. Windows `resource`/`_winapi` 부재 모의 import도 통과했다. Windows에서는 검증 가능한 owner-only DACL backend가 없어 private blind-pack builder/verifier만 명시적으로 거절한다.
+2026-08-28 기준 0.6.0 source candidate의 CPython 3.11 개발 runtime unittest
+395개가 통과했고 optional NumPy/ONNX runtime 부재에 따른 37개는 skip됐다.
+Windows `resource`/`_winapi` 부재 모의 import도 통과했다. Windows에서는
+검증 가능한 owner-only DACL backend가 없어 private blind-pack builder/verifier만
+명시적으로 거절한다.
 
 `sddiar-0.4.0-py3-none-any.whl` SHA-256은 `eda81dfe7ad265d2143ea465562bd9ee8d6646f774696e78f504f4e176fe5ea3`다. macOS arm64 fresh venv와 Linux x86_64 emulated hash-locked clean install·import를 통과했다.
 
-현재 checkout에서 빌드한 `sddiar-0.5.0-py3-none-any.whl` SHA-256은 `801c00cfa98a9d61d882dd634be62ca8b965878f83ce2c4eebb2421bec482e74`이며 macOS arm64 no-index fresh install과 43개 module import probe를 통과했다. production 서명·wheelhouse 반입 승인을 대신하지 않는다.
+현재 checkout에서 빌드한 `sddiar-0.6.0-py3-none-any.whl` SHA-256은
+`71e548ff2d84feab87e6603c0104b98a09c9620e46f46856c2c0d482f355d6f7`이며
+macOS arm64 no-index fresh install, 46개 module/source parity와 CLI probe를
+통과했다. production 서명·wheelhouse 반입 승인을 대신하지 않는다.
 
 정확한 1.00-CPU quota baseline은 wall `120.844초`, RTF `0.03810`, RSS `180.28MB`였다. NumPy PCM + H2 single pass 후 wall `85.210초`, RTF `0.02687`, RSS `154.45MB`로 29.5% 개선됐고 H2/span/metric은 동일하다. Silero temporal ResNet challenger는 RTF `0.02892`로 full/holdout coverage `42.95%/42.45%`와 turn 품질을 개선했으나 holdout worst-speaker accuracy `94.18%`로 95% gate를 넘지 못해 default-off다.
 
