@@ -52,9 +52,15 @@ class PublicKoreanBenchmarkIntegrationTests(unittest.TestCase):
                 ref_path = root / "rttm" / f"{reference.recording_id}.rttm"
                 uem_path = root / "uem" / f"{reference.recording_id}.uem"
                 pred_path = root / "pred" / f"{reference.recording_id}.rttm"
-                ref_path.write_text(rttm, encoding="utf-8")
-                uem_path.write_text(uem, encoding="utf-8")
-                pred_path.write_text(rttm.replace("REF_00", "SPEAKER_00").replace("REF_01", "SPEAKER_01"), encoding="utf-8")
+                # Adapter hashes bind canonical UTF-8/LF bytes.  Avoid host
+                # newline translation so the same fixture works on Windows.
+                ref_path.write_bytes(rttm.encode("utf-8"))
+                uem_path.write_bytes(uem.encode("utf-8"))
+                pred_path.write_bytes(
+                    rttm.replace("REF_00", "SPEAKER_00")
+                    .replace("REF_01", "SPEAKER_01")
+                    .encode("utf-8")
+                )
                 rows.append(build_nikl_manifest_row(
                     reference, audio_sha256=hashlib.sha256(wav_path.read_bytes()).hexdigest(),
                     sample_rate_hz=16000, split=split,

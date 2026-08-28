@@ -60,6 +60,8 @@ NIKL JSON + continuous WAV
 `milliseconds` 또는 `seconds`를 명시해야 한다. 값이 WAV duration을 1µs라도
 벗어나면 clamp하지 않고 실패한다. provisional UEM은 전체 발화 누락·비식별
 구간을 사람이 감사한 뒤에만 full-audio 또는 audited-exclusion UEM으로 승격한다.
+생성된 RTTM/UEM hash는 UTF-8/LF canonical bytes 기준이므로 Windows에서도
+`format_nikl_*().encode("utf-8")` 결과를 `Path.write_bytes()`로 저장한다.
 
 ## 정규화 reference manifest
 
