@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal, DecimalException, InvalidOperation
 import hashlib
 import json
 import math
@@ -36,14 +36,21 @@ REQUIRED_FIELDS = frozenset({
 })
 OPTIONAL_FIELDS = frozenset({
     "recording_id", "source_recording_id", "augmentation_group",
-    "words", "words_sha256", "words_timebase",
+    "words", "words_sha256", "words_timebase", "rttm_sha256", "uem_sha256",
+    "speaker_group_ids", "reference_status", "uem_policy", "conversion_evidence_sha256",
 })
 ALLOWED_FIELDS = REQUIRED_FIELDS | OPTIONAL_FIELDS
 REQUIRED_SPLITS = ("CALIBRATION", "DEVELOPMENT_HOLDOUT", "RELEASE_HOLDOUT")
 GENDER_PAIRS = frozenset({"MM", "FF", "MF", "M", "F", "UNKNOWN"})
 SAMPLE_RATES = frozenset({8000, 16000})
+CONDITION_ALLOWLIST = frozenset({
+    "near", "far", "noisy", "quiet", "quiet-secondary", "short-turn", "overlap",
+    "low-overlap", "high-overlap", "regional-interview", "synthetic", "clean",
+    "reverberant", "telephone", "broadcast", "child-speech", "adult-speech", "unknown",
+})
 PATH_FIELDS = ("audio", "rttm", "uem")
 WORD_ARTIFACT_FIELDS = frozenset({"words", "words_sha256", "words_timebase"})
+ANNOTATION_HASH_FIELDS = frozenset({"rttm_sha256", "uem_sha256"})
 WORD_ROW_REQUIRED_FIELDS = frozenset({
     "recording_id", "word_id", "start_us", "end_us", "text", "ref_speaker_id",
     "attributable", "overlap_flag", "boundary_crossing_flag",
@@ -58,6 +65,13 @@ _KNOWN_BAD_IDS = frozenset({
     "customer", "client", "transcript", "speaker", "person",
 })
 _NON_SPEECH_LABEL = re.compile(r"^(?:UNKNOWN|OVERLAP|SIL|SILENCE|NON[_-]?SPEECH)(?:[_-]?\d+)?$")
+MAX_MANIFEST_BYTES = 16 * 1024 * 1024
+MAX_ANNOTATION_BYTES = 64 * 1024 * 1024
+MAX_MANIFEST_ROWS = 10_000
+MAX_RTTM_SEGMENTS = 100_000
+MAX_UEM_INTERVALS = 10_000
+MAX_WORD_ROWS = 200_000
+MAX_ANNOTATION_TIME_US = 86_400_000_000
 
 
 @dataclass(frozen=True)
@@ -91,6 +105,7 @@ class _RecordStats:
     speaker_count: int
     gender_pair: str
     conditions: tuple[str, ...]
+    speaker_group_ids: tuple[str, ...] = ()
     duration_us: int = 0
     speakers: set[str] = field(default_factory=set)
     segment_count: int = 0
@@ -211,25 +226,90 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _bounded_bytes(path: Path, *, max_bytes: int | None = None) -> bytes:
+    fd: int | None = None
+    try:
+        limit = MAX_ANNOTATION_BYTES if max_bytes is None else max_bytes
+        metadata = os.lstat(path)
+        reparse = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0)
+        attributes = int(getattr(metadata, "st_file_attributes", 0))
+        if (path.is_symlink() or not stat.S_ISREG(metadata.st_mode)
+                or (reparse and attributes & reparse) or metadata.st_size > limit):
+            raise ValueError("size")
+        flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_BINARY", 0)
+        fd = os.open(path, flags)
+        opened = os.fstat(fd)
+        if (not stat.S_ISREG(opened.st_mode) or opened.st_size > limit
+                or ((metadata.st_dev, metadata.st_ino) != (opened.st_dev, opened.st_ino)
+                    and metadata.st_ino and opened.st_ino)):
+            raise ValueError("type")
+        with os.fdopen(fd, "rb", buffering=0) as handle:
+            fd = None
+            chunks: list[bytes] = []
+            total = 0
+            while True:
+                block = handle.read(min(1 << 20, limit - total + 1))
+                if not block:
+                    break
+                total += len(block)
+                if total > limit:
+                    raise ValueError("size")
+                chunks.append(block)
+            return b"".join(chunks)
+    except (OSError, ValueError) as exc:
+        raise ValueError("bounded artifact read failed") from exc
+    finally:
+        if fd is not None:
+            try:
+                os.close(fd)
+            except OSError:
+                pass
+
+
+def _strict_json_text(text: str) -> Any:
+    def pairs(values: list[tuple[str, Any]]) -> dict[str, Any]:
+        out: dict[str, Any] = {}
+        for key, value in values:
+            if key in out:
+                raise ValueError("duplicate key")
+            out[key] = value
+        return out
+
+    return json.loads(
+        text,
+        object_pairs_hook=pairs,
+        parse_constant=lambda _value: (_ for _ in ()).throw(ValueError("constant")),
+    )
+
+
 def _time_us(raw: str, *, positive: bool = False) -> int:
     try:
         value = Decimal(raw)
-    except (InvalidOperation, ValueError):
-        raise ValueError("time") from None
-    if not value.is_finite() or value < 0 or (positive and value <= 0):
+        max_seconds = Decimal(MAX_ANNOTATION_TIME_US) / Decimal(1_000_000)
+        if (not value.is_finite() or value < 0 or value > max_seconds
+                or (positive and value <= 0)):
+            raise ValueError("time")
+        scaled = value * Decimal(1_000_000)
+        if not scaled.is_finite() or scaled > MAX_ANNOTATION_TIME_US:
+            raise ValueError("time")
+        return int(scaled.to_integral_value())
+    except (DecimalException, InvalidOperation, OverflowError, ValueError):
         raise ValueError("time")
-    # Decimal avoids platform-specific float rounding at annotation borders.
-    return int((value * Decimal(1_000_000)).to_integral_value())
 
 
 def _parse_uem(text: str, audio_id: str, duration_us: int) -> tuple[list[tuple[int, int]], list[str]]:
     intervals: list[tuple[int, int]] = []
     codes: list[str] = []
     previous_end = -1
+    row_count = 0
     for line_no, line in enumerate(text.splitlines(), 1):
         fields = line.split()
         if not fields or fields[0].startswith("#"):
             continue
+        row_count += 1
+        if row_count > MAX_UEM_INTERVALS:
+            codes.append("UEM_INTERVAL_LIMIT")
+            break
         if len(fields) != 4:
             codes.append("UEM_SCHEMA")
             continue
@@ -263,10 +343,15 @@ def _parse_uem(text: str, audio_id: str, duration_us: int) -> tuple[list[tuple[i
 def _parse_rttm(text: str, audio_id: str, duration_us: int) -> tuple[list[tuple[str, int, int]], list[str]]:
     segments: list[tuple[str, int, int]] = []
     codes: list[str] = []
+    row_count = 0
     for line in text.splitlines():
         fields = line.split()
         if not fields or fields[0].startswith("#"):
             continue
+        row_count += 1
+        if row_count > MAX_RTTM_SEGMENTS:
+            codes.append("RTTM_SEGMENT_LIMIT")
+            break
         if len(fields) != 10 or fields[0].upper() != "SPEAKER":
             codes.append("RTTM_SCHEMA")
             continue
@@ -310,13 +395,18 @@ def _parse_words_text(text: str, *, expected_recording_id: str,
     reference = set(reference_speakers)
     scored_uem = tuple(uem)
     saw_row = False
+    row_count = 0
     for line in text.splitlines():
         if not line.strip():
             continue
         saw_row = True
+        row_count += 1
+        if row_count > MAX_WORD_ROWS:
+            codes.append("WORDS_ROW_LIMIT")
+            break
         try:
-            value = json.loads(line)
-        except json.JSONDecodeError:
+            value = _strict_json_text(line)
+        except (json.JSONDecodeError, ValueError, TypeError, RecursionError):
             codes.append("WORDS_JSON")
             continue
         if not isinstance(value, dict):
@@ -439,9 +529,9 @@ def load_words_artifact(path: str | Path, *, expected_recording_id: str | None =
             or timebase != "microseconds" or not _words_path_is_safe(target)):
         raise ValueError("invalid words artifact contract")
     try:
-        raw = target.read_bytes()
+        raw = _bounded_bytes(target)
         text = raw.decode("utf-8")
-    except (OSError, UnicodeError) as exc:
+    except (OSError, UnicodeError, ValueError) as exc:
         raise ValueError("unable to read words artifact") from exc
     digest = hashlib.sha256(raw).hexdigest()
     if digest.lower() != expected_sha256.lower():
@@ -461,9 +551,9 @@ read_words_artifact = load_words_artifact
 def _annotation_checks(record: _RecordStats, rttm_path: Path, uem_path: Path,
                        report: AnnotationValidationReport) -> None:
     try:
-        uem_text = uem_path.read_text(encoding="utf-8")
-        rttm_text = rttm_path.read_text(encoding="utf-8")
-    except (OSError, UnicodeError):
+        uem_text = _bounded_bytes(uem_path).decode("utf-8")
+        rttm_text = _bounded_bytes(rttm_path).decode("utf-8")
+    except (OSError, UnicodeError, ValueError):
         _issue(report, "ANNOTATION_READ", record.index)
         return
     uem, uem_codes = _parse_uem(uem_text, record.audio_id, record.duration_us)
@@ -482,10 +572,20 @@ def _annotation_checks(record: _RecordStats, rttm_path: Path, uem_path: Path,
         _issue(report, "RTTM_OUTSIDE_UEM", record.index)
     # Measure the union of regions with at least two distinct active speakers;
     # a three-way overlap is counted once rather than once per speaker pair.
-    boundaries = sorted({point for _, start, end in segments for point in (start, end)})
+    events: dict[int, list[tuple[str, int]]] = defaultdict(list)
+    for speaker, start, end in segments:
+        events[start].append((speaker, 1))
+        events[end].append((speaker, -1))
+    active: Counter[str] = Counter()
     overlap = 0
-    for left, right in zip(boundaries, boundaries[1:]):
-        if len({speaker for speaker, start, end in segments if start < right and end > left}) >= 2:
+    boundaries = sorted(events)
+    for index, left in enumerate(boundaries[:-1]):
+        for speaker, delta in events[left]:
+            active[speaker] += delta
+            if active[speaker] <= 0:
+                del active[speaker]
+        right = boundaries[index + 1]
+        if len(active) >= 2:
             overlap += right - left
     record.overlap_us = overlap
     record.valid_annotations = not any(
@@ -493,7 +593,8 @@ def _annotation_checks(record: _RecordStats, rttm_path: Path, uem_path: Path,
             "ANNOTATION_READ", "UEM_SCHEMA", "UEM_TIMING", "UEM_OUTSIDE_AUDIO",
             "UEM_EMPTY", "RTTM_SCHEMA", "RTTM_TIMING", "RTTM_OUTSIDE_AUDIO",
             "RTTM_EMPTY", "FILE_ID_MISMATCH", "CHANNEL_MISMATCH", "PRIVACY_ID",
-            "RTTM_OUTSIDE_UEM", "SPEAKER_COUNT_MISMATCH",
+            "RTTM_OUTSIDE_UEM", "SPEAKER_COUNT_MISMATCH", "UEM_INTERVAL_LIMIT",
+            "RTTM_SEGMENT_LIMIT",
         } for issue in report.errors
     )
 
@@ -505,9 +606,9 @@ def _words_checks(record: _RecordStats, words_path: Path, row: Mapping[str, Any]
     if not isinstance(expected_hash, str) or _HEX64.fullmatch(expected_hash) is None:
         return
     try:
-        raw = words_path.read_bytes()
+        raw = _bounded_bytes(words_path)
         text = raw.decode("utf-8")
-    except (OSError, UnicodeError):
+    except (OSError, UnicodeError, ValueError):
         _issue(report, "WORDS_READ", record.index)
         return
     hash_ok = hashlib.sha256(raw).hexdigest().lower() == expected_hash.lower()
@@ -538,6 +639,32 @@ def _record_from_row(row: Mapping[str, Any], index: int, report: AnnotationValid
     words_present = bool(WORD_ARTIFACT_FIELDS & set(row))
     if words_present and WORD_ARTIFACT_FIELDS - set(row):
         _issue(report, "WORDS_FIELDS", index)
+    annotation_hashes_present = bool(ANNOTATION_HASH_FIELDS & set(row))
+    if annotation_hashes_present and ANNOTATION_HASH_FIELDS - set(row):
+        _issue(report, "ANNOTATION_HASH_FIELDS", index)
+    for name in ANNOTATION_HASH_FIELDS:
+        if name in row and (not isinstance(row[name], str) or _HEX64.fullmatch(row[name]) is None):
+            _issue(report, "ANNOTATION_HASH_SCHEMA", index, name)
+    authority_fields = {"reference_status", "uem_policy", "conversion_evidence_sha256"}
+    if authority_fields & set(row) and authority_fields - set(row):
+        _issue(report, "REFERENCE_AUTHORITY_FIELDS", index)
+    if ("reference_status" in row and (
+        not isinstance(row["reference_status"], str) or row["reference_status"] not in {
+            "CONVERTED_PROVISIONAL", "GOLD_APPROVED", "SILVER", "CHALLENGE"
+        }
+    )):
+        _issue(report, "REFERENCE_STATUS_SCHEMA", index, "reference_status")
+    if ("uem_policy" in row and (
+        not isinstance(row["uem_policy"], str) or row["uem_policy"] not in {
+            "ANNOTATED_EXTENT_PROVISIONAL", "FULL_AUDIO", "AUDITED_EXCLUSIONS"
+        }
+    )):
+        _issue(report, "UEM_POLICY_SCHEMA", index, "uem_policy")
+    if ("conversion_evidence_sha256" in row and (
+        not isinstance(row["conversion_evidence_sha256"], str)
+        or _HEX64.fullmatch(row["conversion_evidence_sha256"]) is None
+    )):
+        _issue(report, "CONVERSION_EVIDENCE_HASH_SCHEMA", index, "conversion_evidence_sha256")
     scalar_ids = ("audio_id", "session_id", "recording_id", "source_recording_id", "augmentation_group")
     for name in scalar_ids:
         if name in row and row[name] is not None and not _opaque_identifier(row[name]):
@@ -562,7 +689,7 @@ def _record_from_row(row: Mapping[str, Any], index: int, report: AnnotationValid
         _issue(report, "GENDER_PAIR_SCHEMA", index, "gender_pair")
     conditions = row["conditions"]
     if not isinstance(conditions, list) or not conditions or any(
-        not isinstance(item, str) or not re.fullmatch(r"[a-z0-9][a-z0-9_-]{0,63}", item.lower())
+        not isinstance(item, str) or item.lower() not in CONDITION_ALLOWLIST
         for item in conditions
     ):
         _issue(report, "CONDITIONS_SCHEMA", index, "conditions")
@@ -583,6 +710,17 @@ def _record_from_row(row: Mapping[str, Any], index: int, report: AnnotationValid
     source_recording_id = source_raw if _opaque_identifier(source_raw) else None
     augmentation_raw = row.get("augmentation_group")
     augmentation_group = augmentation_raw if _opaque_identifier(augmentation_raw) else None
+    raw_speaker_groups = row.get("speaker_group_ids", [])
+    speaker_group_ids: tuple[str, ...] = ()
+    if not isinstance(raw_speaker_groups, list) or any(
+        not _opaque_identifier(value) for value in raw_speaker_groups
+    ) or len(raw_speaker_groups) != len(set(raw_speaker_groups)):
+        _issue(report, "SPEAKER_GROUP_IDS_SCHEMA", index, "speaker_group_ids")
+    elif ("speaker_group_ids" in row and type(count) is int and count in {1, 2}
+          and len(raw_speaker_groups) != count):
+        _issue(report, "SPEAKER_GROUP_COUNT_MISMATCH", index, "speaker_group_ids")
+    else:
+        speaker_group_ids = tuple(sorted(raw_speaker_groups))
     # A malformed scalar field remains an error, but returning a record allows
     # leakage and required-split diagnostics to be collected in one run.
     return _RecordStats(
@@ -597,6 +735,7 @@ def _record_from_row(row: Mapping[str, Any], index: int, report: AnnotationValid
         speaker_count=count if isinstance(count, int) else 0,
         gender_pair=gender.upper() if isinstance(gender, str) else "INVALID",
         conditions=tuple(str(item).lower() for item in conditions),
+        speaker_group_ids=speaker_group_ids,
         words_declared=words_present,
     )
 
@@ -673,8 +812,8 @@ def validate_annotation_dataset(manifest_path: str | Path, *, dataset_root: str 
     records: list[_RecordStats] = []
     audio_ids_seen: set[str] = set()
     try:
-        lines = manifest.read_text(encoding="utf-8").splitlines()
-    except (OSError, UnicodeError):
+        lines = _bounded_bytes(manifest, max_bytes=MAX_MANIFEST_BYTES).decode("utf-8").splitlines()
+    except (OSError, UnicodeError, ValueError):
         _issue(report, "MANIFEST_READ")
         report.readiness = _readiness(records, report)
         return report
@@ -682,9 +821,12 @@ def validate_annotation_dataset(manifest_path: str | Path, *, dataset_root: str 
         if not line.strip():
             continue
         report.records_seen += 1
+        if report.records_seen > MAX_MANIFEST_ROWS:
+            _issue(report, "MANIFEST_ROW_LIMIT", index)
+            break
         try:
-            row = json.loads(line)
-        except json.JSONDecodeError:
+            row = _strict_json_text(line)
+        except (json.JSONDecodeError, ValueError, TypeError, RecursionError):
             _issue(report, "MANIFEST_JSON", index)
             continue
         if not isinstance(row, dict):
@@ -704,6 +846,13 @@ def validate_annotation_dataset(manifest_path: str | Path, *, dataset_root: str 
                 _issue(report, "PATH_INVALID", index, name)
             else:
                 paths[name] = path
+                hash_field = f"{name}_sha256"
+                if name in {"rttm", "uem"} and hash_field in row:
+                    try:
+                        if _sha256(path).lower() != str(row[hash_field]).lower():
+                            _issue(report, "ANNOTATION_HASH_MISMATCH", index, hash_field)
+                    except OSError:
+                        _issue(report, "ANNOTATION_READ", index, name)
         if record.words_declared:
             words_path = _check_path(root, row.get("words"))
             if words_path is None:
@@ -750,6 +899,7 @@ def validate_annotation_dataset(manifest_path: str | Path, *, dataset_root: str 
     try:
         validate_recording_session_splits(RecordingManifest(
             recording_id=r.recording_id, session_id=r.session_id, split=r.split,
+            speaker_ids=r.speaker_group_ids,
             source_recording_id=r.source_recording_id,
             augmentation_group=r.augmentation_group,
         ) for r in records)
@@ -765,6 +915,9 @@ validate_annotation_manifest = validate_annotation_dataset
 
 __all__ = [
     "AnnotationValidationReport", "IntakeIssue", "WordsArtifact", "REQUIRED_SPLITS",
+    "MAX_ANNOTATION_BYTES", "MAX_MANIFEST_BYTES", "MAX_MANIFEST_ROWS",
+    "MAX_RTTM_SEGMENTS", "MAX_UEM_INTERVALS", "MAX_WORD_ROWS",
+    "MAX_ANNOTATION_TIME_US", "CONDITION_ALLOWLIST",
     "load_words_artifact", "load_words_jsonl_artifact", "read_words_artifact",
     "validate_annotation_dataset", "validate_annotation_manifest",
 ]

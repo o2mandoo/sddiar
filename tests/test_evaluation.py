@@ -3,13 +3,15 @@ from dataclasses import FrozenInstanceError
 import json
 from pathlib import Path
 import tempfile
+from unittest import mock
 
 from sddiar.evaluation import (
     CalibrationGuardError, EvaluationError, EvaluationRecording, MicroDecision,
     RecordingManifest, RTTMRecord, ScoringConfig, SplitLeakageError, UEMInterval,
     WordAnnotation, WordDecision, build_run_manifest, parse_rttm, parse_uem,
     parse_words_jsonl, score_boundaries, score_corpus, score_recording,
-    score_safety, validate_calibration_split, word_attribution_metrics,
+    score_safety, validate_calibration_split, validate_recording_session_splits,
+    word_attribution_metrics,
     write_run_manifest,
 )
 
@@ -47,6 +49,15 @@ class EvaluationTests(unittest.TestCase):
         validate_calibration_split(cal, holdout)
     with self.assertRaises(CalibrationGuardError):
         validate_calibration_split([RecordingManifest("a", "s", "DEV")], [])
+
+
+  def test_split_guard_rejects_global_speaker_leakage(self):
+    records = (
+        RecordingManifest("a", "session-a", "CALIBRATION", ("person-hmac-001",)),
+        RecordingManifest("b", "session-b", "RELEASE_HOLDOUT", ("person-hmac-001",)),
+    )
+    with self.assertRaisesRegex(SplitLeakageError, "speaker"):
+        validate_recording_session_splits(records)
 
 
   def test_uem_exact_duration_weighted_der_and_deterministic_mapping(self):
@@ -232,6 +243,38 @@ class EvaluationTests(unittest.TestCase):
                         uem=(UEMInterval("f", 0, 3 * second),))
     with self.assertRaises(EvaluationError):
         score_corpus(())
+
+
+  def test_annotation_time_and_record_limits_fail_closed(self):
+    with self.assertRaisesRegex(EvaluationError, "invalid RTTM time"):
+      parse_rttm("SPEAKER f 1 1e999999999 0.5 <NA> <NA> REF_00 <NA> <NA>")
+    rows = (
+      "SPEAKER f 1 0.0 0.5 <NA> <NA> REF_00 <NA> <NA>\n"
+      "SPEAKER f 1 0.5 0.5 <NA> <NA> REF_00 <NA> <NA>\n"
+    )
+    with mock.patch("sddiar.evaluation.MAX_RTTM_RECORDS", 1):
+      with self.assertRaisesRegex(EvaluationError, "record limit"):
+        parse_rttm(rows)
+
+
+  def test_timeline_sweep_preserves_overlapping_same_speaker_semantics(self):
+    refs = (
+      RTTMRecord("f", "REF_00", 0, 2_000_000),
+      RTTMRecord("f", "REF_00", 1_000_000, 3_000_000),
+      RTTMRecord("f", "REF_01", 2_000_000, 4_000_000),
+    )
+    hypothesis = (
+      RTTMRecord("f", "A", 0, 3_000_000),
+      RTTMRecord("f", "B", 2_000_000, 4_000_000),
+    )
+    score = score_recording(
+      recording_id="f", reference=refs, hypothesis=hypothesis,
+      uem=(UEMInterval("f", 0, 4_000_000),),
+      overlap_reference_available=True,
+      config=ScoringConfig(der_collar_us=0),
+    )
+    self.assertEqual(score.diarization_all.der, 0.0)
+    self.assertEqual(score.overlap.reference_overlap_us, 1_000_000)
 
 
 if __name__ == "__main__":

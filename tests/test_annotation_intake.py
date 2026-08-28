@@ -7,6 +7,7 @@ import tempfile
 import struct
 import wave
 import unittest
+from unittest import mock
 
 from sddiar.annotation_intake import load_words_artifact, validate_annotation_dataset
 
@@ -185,6 +186,32 @@ class AnnotationIntakeTests(unittest.TestCase):
                          "WORDS_REF_SPEAKER_UNKNOWN", "WORDS_FLAG_SCHEMA"} <= codes)
         self.assertNotIn("secret", json.dumps(report.as_dict()))
 
+    def test_annotation_hashes_and_speaker_group_split_are_bound(self):
+        first = self._row("opaque-701", "CALIBRATION")
+        second = self._row("opaque-702", "RELEASE_HOLDOUT")
+        third = self._row("opaque-703", "DEVELOPMENT_HOLDOUT")
+        for row in (first, second, third):
+            row["rttm_sha256"] = hashlib.sha256((self.root / row["rttm"]).read_bytes()).hexdigest()
+            row["uem_sha256"] = hashlib.sha256((self.root / row["uem"]).read_bytes()).hexdigest()
+        first["speaker_group_ids"] = ["person-hmac-001"]
+        second["speaker_group_ids"] = ["person-hmac-001"]
+        third["speaker_group_ids"] = ["person-hmac-003"]
+        first["rttm_sha256"] = "0" * 64
+        report = validate_annotation_dataset(self._write([first, second, third]))
+        codes = {item.code for item in report.errors}
+        self.assertIn("ANNOTATION_HASH_MISMATCH", codes)
+        self.assertIn("SPLIT_LEAKAGE", codes)
+
+    def test_declared_speaker_groups_must_match_speaker_count(self):
+        row = self._row("opaque-711", "CALIBRATION", speaker_count=1)
+        row["speaker_group_ids"] = ["person-hmac-001", "person-hmac-002"]
+        report = validate_annotation_dataset(self._write([
+            row,
+            self._row("opaque-712", "DEVELOPMENT_HOLDOUT"),
+            self._row("opaque-713", "RELEASE_HOLDOUT"),
+        ]))
+        self.assertIn("SPEAKER_GROUP_COUNT_MISMATCH", {item.code for item in report.errors})
+
     def test_wave_format_extensible_pcm_is_accepted(self):
         row = self._row("opaque-501", "CALIBRATION")
         path = self.root / row["audio"]
@@ -201,6 +228,69 @@ class AnnotationIntakeTests(unittest.TestCase):
             self._row("opaque-503", "RELEASE_HOLDOUT"),
         ]))
         self.assertTrue(report.ok, report.as_dict())
+
+    def test_manifest_and_annotation_reads_are_bounded(self):
+        row = self._row("opaque-801", "CALIBRATION")
+        manifest = self._write([row])
+        with mock.patch("sddiar.annotation_intake.MAX_MANIFEST_BYTES", 1):
+            report = validate_annotation_dataset(manifest)
+        self.assertIn("MANIFEST_READ", {item.code for item in report.errors})
+        rows = [row, self._row("opaque-802", "DEVELOPMENT_HOLDOUT"),
+                self._row("opaque-803", "RELEASE_HOLDOUT")]
+        manifest = self._write(rows)
+        with mock.patch("sddiar.annotation_intake.MAX_ANNOTATION_BYTES", 1):
+            report = validate_annotation_dataset(manifest)
+        self.assertIn("ANNOTATION_READ", {item.code for item in report.errors})
+
+    def test_condition_labels_are_fixed_public_buckets(self):
+        row = self._row("opaque-901", "CALIBRATION", conditions=["customer-acme"])
+        report = validate_annotation_dataset(self._write([
+            row, self._row("opaque-902", "DEVELOPMENT_HOLDOUT"),
+            self._row("opaque-903", "RELEASE_HOLDOUT"),
+        ]))
+        self.assertIn("CONDITIONS_SCHEMA", {item.code for item in report.errors})
+        self.assertNotIn("customer-acme", json.dumps(report.as_dict()))
+
+    def test_deep_json_huge_time_and_enum_type_confusion_fail_as_redacted_issues(self):
+        deep_manifest = self.root / "deep.jsonl"
+        deep_manifest.write_text("[" * 2_000 + "]" * 2_000 + "\n", encoding="utf-8")
+        report = validate_annotation_dataset(deep_manifest)
+        self.assertTrue(
+            {"MANIFEST_JSON", "MANIFEST_ROW_SCHEMA"}
+            & {item.code for item in report.errors}
+        )
+
+        row = self._row("opaque-911", "CALIBRATION")
+        row.update({
+            "reference_status": [],
+            "uem_policy": "FULL_AUDIO",
+            "conversion_evidence_sha256": "a" * 64,
+        })
+        (self.root / row["rttm"]).write_text(
+            "SPEAKER opaque-911 1 1e999999999 0.5 <NA> <NA> REF_00 <NA> <NA>\n",
+            encoding="utf-8",
+        )
+        report = validate_annotation_dataset(self._write([
+            row,
+            self._row("opaque-912", "DEVELOPMENT_HOLDOUT"),
+            self._row("opaque-913", "RELEASE_HOLDOUT"),
+        ]))
+        codes = {item.code for item in report.errors}
+        self.assertIn("REFERENCE_STATUS_SCHEMA", codes)
+        self.assertIn("RTTM_TIMING", codes)
+
+    def test_words_deep_json_and_nonregular_manifest_fail_closed(self):
+        words = self.root / "deep-words.jsonl"
+        raw = ("[" * 2_000 + "]" * 2_000 + "\n").encode("utf-8")
+        words.write_bytes(raw)
+        with self.assertRaisesRegex(ValueError, "invalid words artifact"):
+            load_words_artifact(
+                words,
+                expected_recording_id="opaque-921",
+                expected_sha256=hashlib.sha256(raw).hexdigest(),
+            )
+        report = validate_annotation_dataset(self.root)
+        self.assertIn("MANIFEST_READ", {item.code for item in report.errors})
 
 
 if __name__ == "__main__":

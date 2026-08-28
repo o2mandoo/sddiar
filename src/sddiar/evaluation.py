@@ -6,12 +6,13 @@ it does not load audio, models, or service SDKs.
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, is_dataclass
-from decimal import Decimal, InvalidOperation, ROUND_HALF_EVEN
+from decimal import Decimal, DecimalException, InvalidOperation, ROUND_HALF_EVEN
 from hashlib import sha256
 from itertools import permutations
 import json
 import math
-from collections import defaultdict
+from collections import Counter, defaultdict
+import heapq
 from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping, Sequence
 
@@ -25,6 +26,11 @@ _HYPOTHESIS_NON_SPEAKERS = frozenset({
 })
 _PASS_SPEAKER_AWARE = frozenset({"PASS_HIGH", "PASS_STANDARD"})
 _ALL_PASS = frozenset({"PASS_HIGH", "PASS_STANDARD", "PASS_WITH_UNATTRIBUTED"})
+MAX_RTTM_RECORDS = 100_000
+MAX_UEM_RECORDS = 10_000
+MAX_WORD_ANNOTATIONS = 200_000
+MAX_TIMELINE_SCAN_WORK = 2_000_000
+MAX_ANNOTATION_TIME_US = 86_400_000_000
 
 
 class EvaluationError(ValueError):
@@ -59,11 +65,17 @@ def validate_recording_session_splits(records: Iterable[RecordingManifest]) -> N
         seen.add(record.recording_id)
         if not record.recording_id or not record.session_id or not record.split:
             raise SplitLeakageError("recording_id, session_id and split are required")
+        speaker_ids = tuple(record.speaker_ids)
+        if len(speaker_ids) != len(set(speaker_ids)) or any(
+            not isinstance(speaker_id, str) or not speaker_id for speaker_id in speaker_ids
+        ):
+            raise SplitLeakageError("speaker_ids must be unique non-empty strings")
         keys = ("session:" + record.session_id,
                 "recording:" + record.recording_id,
                 "source:" + (record.source_recording_id or record.recording_id))
         if record.augmentation_group:
             keys += ("augmentation:" + record.augmentation_group,)
+        keys += tuple("speaker:" + speaker_id for speaker_id in speaker_ids)
         for key in keys:
             groups[key].add(record.split)
     leaked = sorted(key for key, splits in groups.items() if len(splits) > 1)
@@ -445,12 +457,16 @@ def _parsed_time_us(raw: str, *, unit: str) -> int:
         raise EvaluationError("unit must be seconds or microseconds")
     try:
         value = Decimal(raw)
-    except (InvalidOperation, ValueError) as exc:
+        scale = Decimal(1_000_000) if unit == "seconds" else Decimal(1)
+        maximum = Decimal(MAX_ANNOTATION_TIME_US) / scale
+        if not value.is_finite() or value < 0 or value > maximum:
+            raise EvaluationError("invalid annotation time")
+        scaled = value * scale
+        if not scaled.is_finite() or scaled > MAX_ANNOTATION_TIME_US:
+            raise EvaluationError("invalid annotation time")
+        return int(scaled.to_integral_value(rounding=ROUND_HALF_EVEN))
+    except (DecimalException, InvalidOperation, OverflowError, ValueError) as exc:
         raise EvaluationError("invalid annotation time") from exc
-    if not value.is_finite():
-        raise EvaluationError("invalid annotation time")
-    scale = Decimal(1_000_000) if unit == "seconds" else Decimal(1)
-    return int((value * scale).to_integral_value(rounding=ROUND_HALF_EVEN))
 
 
 def parse_rttm(text: str, *, unit: str = "seconds") -> tuple[RTTMRecord, ...]:
@@ -462,6 +478,8 @@ def parse_rttm(text: str, *, unit: str = "seconds") -> tuple[RTTMRecord, ...]:
         fields = line.split()
         if not fields or fields[0].startswith("#"):
             continue
+        if len(out) >= MAX_RTTM_RECORDS:
+            raise EvaluationError("RTTM record limit exceeded")
         # Evaluation accepts the common compact RTTM form (8+ fields); the
         # annotation intake gate separately enforces the repository's strict
         # 10-field archival schema.
@@ -484,6 +502,8 @@ def parse_uem(text: str, *, unit: str = "seconds") -> tuple[UEMInterval, ...]:
         fields = line.split()
         if not fields or fields[0].startswith("#"):
             continue
+        if len(out) >= MAX_UEM_RECORDS:
+            raise EvaluationError("UEM record limit exceeded")
         if len(fields) != 4:
             raise EvaluationError(f"invalid UEM line {line_no}")
         try:
@@ -500,6 +520,8 @@ def parse_words_jsonl(text: str) -> tuple[WordAnnotation, ...]:
     for line_no, line in enumerate(text.splitlines(), 1):
         if not line.strip():
             continue
+        if len(out) >= MAX_WORD_ANNOTATIONS:
+            raise EvaluationError("word annotation limit exceeded")
         try:
             value = json.loads(line)
             if not isinstance(value, dict):
@@ -517,7 +539,7 @@ def parse_words_jsonl(text: str) -> tuple[WordAnnotation, ...]:
                 end_us=value["end_us"], text=value.get("text", ""),
                 ref_speaker_id=value.get("ref_speaker_id"), attributable=flags[0],
                 overlap_flag=flags[1], boundary_crossing_flag=flags[2]))
-        except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
+        except (KeyError, TypeError, ValueError, json.JSONDecodeError, RecursionError) as exc:
             raise EvaluationError(f"invalid words JSONL line {line_no}") from exc
     return tuple(out)
 
@@ -611,24 +633,37 @@ def _timeline_cells(reference: Sequence[RTTMRecord], hypothesis: Sequence[RTTMRe
         refs = tuple(item for item in reference if item.channel == channel)
         hyps = tuple(item for item in hypothesis if item.channel == channel)
         for score_start, score_end in intervals:
-            boundaries = {score_start, score_end}
-            for item in (*refs, *hyps):
-                left, right = max(score_start, item.start_us), min(score_end, item.end_us)
-                if left < right:
-                    boundaries.update((left, right))
-            ordered = sorted(boundaries)
-            for left, right in zip(ordered, ordered[1:]):
+            events: dict[int, list[tuple[str, str, int]]] = defaultdict(list)
+            events[score_start]
+            events[score_end]
+            for side, records in (("reference", refs), ("hypothesis", hyps)):
+                for item in records:
+                    left = max(score_start, item.start_us)
+                    right = min(score_end, item.end_us)
+                    if left < right:
+                        events[left].append((side, item.speaker_id, 1))
+                        events[right].append((side, item.speaker_id, -1))
+            ordered = sorted(events)
+            active_reference: Counter[str] = Counter()
+            active_hypothesis: Counter[str] = Counter()
+            for index, left in enumerate(ordered[:-1]):
+                for side, label, delta in events[left]:
+                    active = active_reference if side == "reference" else active_hypothesis
+                    active[label] += delta
+                    if active[label] <= 0:
+                        del active[label]
+                right = ordered[index + 1]
                 if left >= right:
                     continue
-                active_refs = {item.speaker_id for item in refs if item.start_us < right and item.end_us > left}
-                active_hyps = {item.speaker_id for item in hyps if item.start_us < right and item.end_us > left}
+                reference_labels = frozenset(active_reference)
+                hypothesis_labels = frozenset(active_hypothesis)
                 cells.append(_Cell(
                     left,
                     right,
-                    frozenset(label for label in active_refs if _is_reference_speaker(label)),
-                    frozenset(label for label in active_hyps if _is_hypothesis_speaker(label)),
-                    any(label.upper() == "OVERLAP" for label in active_refs),
-                    any(label.upper() == "OVERLAP" for label in active_hyps),
+                    frozenset(label for label in reference_labels if _is_reference_speaker(label)),
+                    frozenset(label for label in hypothesis_labels if _is_hypothesis_speaker(label)),
+                    any(label.upper() == "OVERLAP" for label in reference_labels),
+                    any(label.upper() == "OVERLAP" for label in hypothesis_labels),
                 ))
     return tuple(cells)
 
@@ -768,17 +803,34 @@ def _derive_change_boundaries(records: Sequence[RTTMRecord], uem: Mapping[str, S
         ordered = sorted((record for record in records
                           if record.channel == channel and is_speaker(record.speaker_id)),
                          key=lambda record: (record.start_us, record.end_us, record.speaker_id))
-        starts = sorted({record.start_us for record in ordered})
-        for point in starts:
-            new_speakers = {record.speaker_id for record in ordered if record.start_us == point}
-            prior = {record.speaker_id for record in ordered
-                     if record.start_us < point and record.end_us >= point}
+        starts: dict[int, list[RTTMRecord]] = defaultdict(list)
+        ends: dict[int, set[str]] = defaultdict(set)
+        for record in ordered:
+            starts[record.start_us].append(record)
+            ends[record.end_us].add(record.speaker_id)
+        ordered_ends = sorted(ends.items())
+        end_index = 0
+        latest_end_speakers: set[str] = set()
+        active: Counter[str] = Counter()
+        active_heap: list[tuple[int, str]] = []
+        for point in sorted(starts):
+            while active_heap and active_heap[0][0] < point:
+                _end, speaker = heapq.heappop(active_heap)
+                active[speaker] -= 1
+                if active[speaker] <= 0:
+                    del active[speaker]
+            while end_index < len(ordered_ends) and ordered_ends[end_index][0] <= point:
+                latest_end_speakers = ordered_ends[end_index][1]
+                end_index += 1
+            new_speakers = {record.speaker_id for record in starts[point]}
+            prior = set(active)
             if not prior:
-                previous_end = max((record.end_us for record in ordered if record.end_us <= point), default=None)
-                if previous_end is not None:
-                    prior = {record.speaker_id for record in ordered if record.end_us == previous_end}
+                prior = latest_end_speakers
             if prior and any(speaker not in prior for speaker in new_speakers) and _inside_uem(point, {channel: uem[channel]}):
                 events.add(point)
+            for record in starts[point]:
+                active[record.speaker_id] += 1
+                heapq.heappush(active_heap, (record.end_us, record.speaker_id))
     return tuple(sorted(events))
 
 
@@ -947,6 +999,21 @@ def score_recording(recording: EvaluationRecording | None = None, *,
         word_decisions = recording.word_decisions
         micro_decisions = recording.micro_decisions
     reference, hypothesis, uem = tuple(reference), tuple(hypothesis), tuple(uem)
+    if len(reference) > MAX_RTTM_RECORDS or len(hypothesis) > MAX_RTTM_RECORDS:
+        raise EvaluationError("RTTM record limit exceeded")
+    if len(uem) > MAX_UEM_RECORDS:
+        raise EvaluationError("UEM record limit exceeded")
+    if len(uem) * (len(reference) + len(hypothesis) + 1) > MAX_TIMELINE_SCAN_WORK:
+        raise EvaluationError("timeline scoring work limit exceeded")
+    if words is not None and len(words) > MAX_WORD_ANNOTATIONS:
+        raise EvaluationError("word annotation limit exceeded")
+    if word_decisions is not None and len(word_decisions) > MAX_WORD_ANNOTATIONS:
+        raise EvaluationError("word decision limit exceeded")
+    if micro_decisions is not None and len(micro_decisions) > MAX_WORD_ANNOTATIONS:
+        raise EvaluationError("MICRO decision limit exceeded")
+    if ((reference_scd_us is not None and len(reference_scd_us) > MAX_RTTM_RECORDS)
+            or (predicted_scd_us is not None and len(predicted_scd_us) > MAX_RTTM_RECORDS)):
+        raise EvaluationError("SCD boundary limit exceeded")
     if recording_id is None:
         file_ids = {item.file_id for item in (*reference, *hypothesis, *uem)}
         if len(file_ids) != 1:
